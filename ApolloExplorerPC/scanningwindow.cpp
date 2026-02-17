@@ -7,28 +7,29 @@
 
 static QPixmap getPixmap( QSharedPointer<AmigaHost> host )
 {
-    if( host->Hardware().contains( "V2", Qt::CaseInsensitive ) ||
-        host->Hardware().contains( "V4", Qt::CaseInsensitive ) ||
-        host->Hardware().contains( "V500", Qt::CaseInsensitive ) ||
-        host->Hardware().contains( "V600", Qt::CaseInsensitive ) ||
-        host->Hardware().contains( "V1200", Qt::CaseInsensitive ))
+    if( host->Hardware().contains( "V2-", Qt::CaseInsensitive ) ||
+        host->Hardware().contains( "V4-SA", Qt::CaseInsensitive ))
     {
         return QPixmap( ":/browser/icons/VampireHW.png" );
     }
-    else if( host->Hardware().contains( "Firebird", Qt::CaseInsensitive ))
+    else if( host->Hardware().contains( "V4-A6000", Qt::CaseInsensitive ))
+    {
+        return QPixmap( ":/browser/icons/UniCornHW.png" );
+    }
+    else if( host->Hardware().contains( "V4-A500", Qt::CaseInsensitive ))
     {
         return QPixmap( ":/browser/icons/FireBirdHW.png" );
     }
-    else if( host->Hardware().contains( "Icedrake", Qt::CaseInsensitive ))
-    {
-        return QPixmap( ":/browser/icons/IceDrakeHW.png" );
-    }
-    else if( host->Hardware().contains( "Manticore", Qt::CaseInsensitive ))
+    else if( host->Hardware().contains( "V4-A600", Qt::CaseInsensitive ))
     {
         return QPixmap( ":/browser/icons/MantiCoreHW.png" );
     }
+    else if( host->Hardware().contains( "V4-A1200", Qt::CaseInsensitive ))
+    {
+        return QPixmap( ":/browser/icons/IceDrakeHW.png" );
+    }
 
-    return QPixmap( ":/browser/icons/UniCornHW.png" );
+    return QPixmap( ":/browser/icons/CommodoreHW.png" );
 }
 
 static QString getItemName( QString name, QHostAddress address )

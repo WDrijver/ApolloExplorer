@@ -29,15 +29,15 @@
 #include "AEDiscoveryThread.h"
 
 #define VREG_BOARD_Unknown      0x00      // Unknown
-#define VREG_BOARD_V600         0x01      // V600
-#define VREG_BOARD_V500         0x02      // V500
+#define VREG_BOARD_V2_A600      0x01      // V2-A600 (Legacy)
+#define VREG_BOARD_V2_A500      0x02      // V2-A500 (Legacy)
 #define VREG_BOARD_V4_A500		0x03      // V4-A500 (FireBird)
 #define VREG_BOARD_V4_A1200     0x04      // V4-A1200 (IceDrake)
-#define VREG_BOARD_V4_SA		0x05      // V4-SA (Stand Alone)
-#define VREG_BOARD_V1200        0x06      // V1200
+#define VREG_BOARD_V4_SA		0x05      // V4-SA (StandAlone)
+#define VREG_BOARD_V2_A1200     0x06      // V2-A1200 (Legacy)
 #define VREG_BOARD_V4_A600      0x07      // V4-A600 (MantiCore)
 #define VREG_BOARD_V4_A6000     0x08      // V4-A6000 (UniCorn)
-#define VREG_BOARD_Future_2     0x09      // Future
+#define VREG_BOARD_Future     	0x09      // Future
 
 #define VREG_BOARD              0xDFF3FC  // [16-bits] BoardID [HIGH-Byte: MODEL, LOW-Byte: xFREQ]
 
@@ -249,11 +249,11 @@ static void getHardwareName( char *name, LONG len )
 	//Now detect which vampire this is
 	switch( boardID )
 	{
-		case VREG_BOARD_V600:
-			snprintf( name, len, "%s", "V2 600" );
+		case VREG_BOARD_V2_A600:
+			snprintf( name, len, "%s", "V2-A600" );
 			break;
-		case VREG_BOARD_V500:
-			snprintf( name, len, "%s", "V2 500" );
+		case VREG_BOARD_V2_A500:
+			snprintf( name, len, "%s", "V2-A500" );
 			break;
 		case VREG_BOARD_V4_A500:
 			snprintf( name, len, "%s", "V4-A500 (FireBird)" );
@@ -262,10 +262,10 @@ static void getHardwareName( char *name, LONG len )
 			snprintf( name, len, "%s", "V4-A1200 (IceDrake)" );
 			break;
 		case VREG_BOARD_V4_SA:
-			snprintf( name, len, "%s", "V4-SA (Stand Alone)" );
+			snprintf( name, len, "%s", "V4-SA (StandAlone)" );
 			break;
-		case VREG_BOARD_V1200:
-			snprintf( name, len, "%s", "V2 1200" );
+		case VREG_BOARD_V2_A1200:
+			snprintf( name, len, "%s", "V2-A1200" );
 			break;
 		case VREG_BOARD_V4_A600:
 			snprintf( name, len, "%s", "V4-A600 (MantiCore)" );
@@ -274,7 +274,7 @@ static void getHardwareName( char *name, LONG len )
 			snprintf( name, len, "%s", "V4-A6000 (UniCorn)" );
 			break;
 		default:
-			snprintf( name, len, "%s", "Amiga" );
+			snprintf( name, len, "%s", "Unknown" );
 			break;
 	}
 
