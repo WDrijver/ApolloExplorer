@@ -118,8 +118,10 @@ DISTFILES += \
     icons/go-up.png \
     icons/refresh.png \
     icons/VampireHW.png \
-    icons/IcedrakeHW.png \
-    icons/FirebirdHW.png \
+    icons/IceDrakeHW.png \
+    icons/FireBirdHW.png \
+    icons/MantiCoreHW.png \
+    icons/UniCornHW.png \
     icons/Apollo_Explorer_icon.png \
     icons/Apollo_Explorer_24x24.png
 

@@ -31,12 +31,12 @@
 #define VREG_BOARD_Unknown      0x00      // Unknown
 #define VREG_BOARD_V600         0x01      // V600
 #define VREG_BOARD_V500         0x02      // V500
-#define VREG_BOARD_V4           0x03      // V4-500
-#define VREG_BOARD_ICEDRAKE     0x04      // V4-Icedrake
-#define VREG_BOARD_V4SA         0x05      // V4SA
+#define VREG_BOARD_V4_A500		0x03      // V4-A500 (FireBird)
+#define VREG_BOARD_V4_A1200     0x04      // V4-A1200 (IceDrake)
+#define VREG_BOARD_V4_SA		0x05      // V4-SA (Stand Alone)
 #define VREG_BOARD_V1200        0x06      // V1200
-#define VREG_BOARD_V4_V600      0x07      // V4-V600 = MantiCore
-#define VREG_BOARD_Future_1     0x08      // Future
+#define VREG_BOARD_V4_A600      0x07      // V4-A600 (MantiCore)
+#define VREG_BOARD_V4_A6000     0x08      // V4-A6000 (UniCorn)
 #define VREG_BOARD_Future_2     0x09      // Future
 
 #define VREG_BOARD              0xDFF3FC  // [16-bits] BoardID [HIGH-Byte: MODEL, LOW-Byte: xFREQ]
@@ -246,7 +246,7 @@ static void getHardwareName( char *name, LONG len )
 	UBYTE boardID = ( *boardRegister >> 8 );
 	dbglog( "[getHardwareName] board register value: 0x%08X ( 0x%02X).\n", (unsigned int)(*boardRegister), boardID );
 
-	//Now detecht which vampire this is
+	//Now detect which vampire this is
 	switch( boardID )
 	{
 		case VREG_BOARD_V600:
@@ -255,20 +255,23 @@ static void getHardwareName( char *name, LONG len )
 		case VREG_BOARD_V500:
 			snprintf( name, len, "%s", "V2 500" );
 			break;
-		case VREG_BOARD_V4:
-			snprintf( name, len, "%s", "Firebird" );
+		case VREG_BOARD_V4_A500:
+			snprintf( name, len, "%s", "V4-A500 (FireBird)" );
 			break;
-		case VREG_BOARD_ICEDRAKE:
-			snprintf( name, len, "%s", "Icedrake" );
+		case VREG_BOARD_V4_A1200:
+			snprintf( name, len, "%s", "V4-A1200 (IceDrake)" );
 			break;
-		case VREG_BOARD_V4SA:
-			snprintf( name, len, "%s", "V4 Standalone" );
+		case VREG_BOARD_V4_SA:
+			snprintf( name, len, "%s", "V4-SA (Stand Alone)" );
 			break;
 		case VREG_BOARD_V1200:
 			snprintf( name, len, "%s", "V2 1200" );
 			break;
-		case VREG_BOARD_V4_V600:
-			snprintf( name, len, "%s", "Manticore" );
+		case VREG_BOARD_V4_A600:
+			snprintf( name, len, "%s", "V4-A600 (MantiCore)" );
+			break;
+		case VREG_BOARD_V4_A6000:
+			snprintf( name, len, "%s", "V4-A6000 (UniCorn)" );
 			break;
 		default:
 			snprintf( name, len, "%s", "Amiga" );
@@ -486,7 +489,7 @@ static void discoveryThread()
 	dbglog( "[discovery] Announcement message length is %u\n", announceMessage->header.length );
 
 	//Add default Values
-	strncpy( announceMessage->name, "Unnamed", sizeof( announceMessage->name ) );
+	strncpy( announceMessage->name, "Apollo", sizeof( announceMessage->name ) );
 	strncpy( announceMessage->osName, "ApolloOS", sizeof( announceMessage->osName ) );
 	strncpy( announceMessage->osVersion, "-", sizeof( announceMessage->osVersion ) );
 	strncpy( announceMessage->hardware, "Unknown", sizeof( announceMessage->hardware ) );
@@ -525,14 +528,6 @@ static void discoveryThread()
 	if( diskObject )
 	{
 		dbglog( "[discoverySocket] Opened disk object\n" );
-
-		//get the variables we want
-		STRPTR name = FindToolType( diskObject->do_ToolTypes, (STRPTR)"name" );
-		if( name )
-		{
-			dbglog( "[discoverySocket] ToolTypes Name: %s\n", name );
-			strncpy( announceMessage->name, name, sizeof( announceMessage->name ) );
-		}
 
 		//Get the OS Name from Tool Types
 		STRPTR osname = FindToolType( diskObject->do_ToolTypes, (STRPTR)"osname" );
@@ -580,6 +575,17 @@ static void discoveryThread()
 				strncpy( announceMessage->hardware, hardwareName, sizeof( announceMessage->hardware ) );
 			}
 		}
+
+		STRPTR name = FindToolType( diskObject->do_ToolTypes, (STRPTR)"name" );
+		if( name )
+		{
+			dbglog( "[discoverySocket] ToolTypes Name: %s\n", name );
+			strncpy( announceMessage->name, name, sizeof( announceMessage->name ) );
+		} else {
+				dbglog( "[discoverySocket] no tooltype name found, using detected hardware: %s\n", hardwareName );
+				strncpy( announceMessage->name, hardwareName, sizeof( announceMessage->name ) );
+		}
+
 		FreeDiskObject( diskObject );
 	}else
 	{
@@ -587,7 +593,7 @@ static void discoveryThread()
 		if( strlen( osName ) > 0 )
 		{
 			dbglog( "[discoverySocket] detected osname: %s\n", osName );
-			strncpy( announceMessage->osName, osName, sizeof( announceMessage->name ) );
+			strncpy( announceMessage->osName, osName, sizeof( announceMessage->osName ) );
 		}
 		getOSVersion( osVersion, sizeof( osVersion ) );
 		if( strlen( osVersion ) > 0 )
@@ -601,6 +607,7 @@ static void discoveryThread()
 		{
 			dbglog( "[discoverySocket] detected hardware: %s\n", hardwareName );
 			strncpy( announceMessage->hardware, hardwareName, sizeof( announceMessage->hardware ) );
+			strncpy( announceMessage->name, hardwareName, sizeof( announceMessage->name ) );
 		}
 	}
 

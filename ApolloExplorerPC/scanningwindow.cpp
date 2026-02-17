@@ -15,20 +15,20 @@ static QPixmap getPixmap( QSharedPointer<AmigaHost> host )
     {
         return QPixmap( ":/browser/icons/VampireHW.png" );
     }
-    else if( host->Hardware().contains( "FB", Qt::CaseInsensitive ) || host->Hardware().contains( "FB500", Qt::CaseInsensitive ))
+    else if( host->Hardware().contains( "Firebird", Qt::CaseInsensitive ))
     {
-        return QPixmap( ":/browser/icons/FirebirdHW.png" );
+        return QPixmap( ":/browser/icons/FireBirdHW.png" );
     }
     else if( host->Hardware().contains( "Icedrake", Qt::CaseInsensitive ))
     {
-        return QPixmap( ":/browser/icons/IcedrakeHW.png" );
+        return QPixmap( ":/browser/icons/IceDrakeHW.png" );
     }
     else if( host->Hardware().contains( "Manticore", Qt::CaseInsensitive ))
     {
-        return QPixmap( ":/browser/icons/ManticoreHW.png" );
+        return QPixmap( ":/browser/icons/MantiCoreHW.png" );
     }
 
-    return QPixmap( ":/browser/icons/CommodoreHW.png" );
+    return QPixmap( ":/browser/icons/UniCornHW.png" );
 }
 
 static QString getItemName( QString name, QHostAddress address )
