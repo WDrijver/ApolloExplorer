@@ -1,6 +1,4 @@
 Amiga/ApolloExplorerSrv
-.vscode/c_cpp_properties.json
-build.log
-error.log
-acp/acp
 ApolloExplorerPC/ApolloExplorer
+acp/acp
+
