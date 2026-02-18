@@ -1,4 +1,4 @@
-#define DBGOUT 1
+#define DBGOUT 0
 
 #include <sys/types.h>
 #include <clib/dos_protos.h>
@@ -44,7 +44,7 @@ BOOL readArguments( )
 	STRPTR cmdLineArgs = GetArgStr();
 	if( cmdLineArgs == NULL )
 	{
-		dbglog( "Failed to get the command line arguments.\n" );
+		dbglog( "No command line arguments found.\n" );
 		return FALSE;
 	}
 

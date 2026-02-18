@@ -5,7 +5,7 @@
  *      Author: rony
  */
 
-#define DBGOUT 1
+#define DBGOUT 0
 
 #ifdef __GNUC__
 #include <stdio.h>

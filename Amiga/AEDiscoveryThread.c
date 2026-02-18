@@ -21,7 +21,7 @@
 #define __BSDSOCKET_NOLIBBASE__
 #include <proto/bsdsocket.h>
 
-#define DBGOUT 1
+#define DBGOUT 0
 
 #include "protocol.h"
 #include "AEUtil.h"
