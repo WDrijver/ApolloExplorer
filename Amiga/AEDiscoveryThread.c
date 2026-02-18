@@ -203,7 +203,8 @@ static void getOSNameandVersion( char *name, LONG namelen, char *version, LONG v
 		}
 		else
 		{
-			//set the version string
+			//set the AmigaOS and version string
+			snprintf( name, namelen, "%s", "AmigaOS" );
 			snprintf( version, versionlen, "%d.%d.%d", maj, min, rev );
 			dbglog( "[getOSNameandVersion] OS Version is %s.\n", version );
 		}

@@ -1,8 +1,8 @@
 #!/bin/bash
 
 clear
+qmake -recursive
 make clean
-qmake
 make -j16
 make clean
 

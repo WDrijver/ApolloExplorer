@@ -2,3 +2,9 @@ Amiga/ApolloExplorerSrv
 ApolloExplorerPC/ApolloExplorer
 acp/acp
 
+Makefile
+acp/Makefile
+AmigaIconReader/Makefile
+ApolloExplorerPC/Makefile
+ApolloExplorerPC/qmake_qmake_qm_files.qrc
+qmake_qmake_qm_files.qrc
