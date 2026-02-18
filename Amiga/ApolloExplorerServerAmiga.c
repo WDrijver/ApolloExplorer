@@ -29,43 +29,56 @@ char g_KeepServerRunning = 1;
 char* g_MessagePortName __attribute((aligned(4))) = MASTER_MSGPORT_NAME;
 struct MsgPort *g_AEServerMessagePort = NULL;
 char g_ShowWBIcon = 1;
+char g_UseArgsName = 0;
+char g_ArgsName[32] = { 0 };
 
 /*****************************************************************************/
 
-#define ARGS_TEMPLATE "NOICON/s"
+#define ARGS_TEMPLATE "NAME/K,NOICON/s"
 BOOL readArguments( )
 {
 	LONG result[2] = { 0, 0 };
-
+	struct RDArgs *rdargs;
+	
 	//Get the string supplied at execution
 	STRPTR cmdLineArgs = GetArgStr();
 	if( cmdLineArgs == NULL )
 	{
-		printf( "Failed to get the command line arguments.\n" );
+		dbglog( "Failed to get the command line arguments.\n" );
 		return FALSE;
 	}
 
 	//Parse the command line arguments
-	if ( ReadArgs(ARGS_TEMPLATE, result, NULL) == NULL )
+	if (rdargs = (struct RDArgs *)ReadArgs(ARGS_TEMPLATE, result, NULL))
+	{
+		//Get the arguments we need
+		if( result[0] )
+		{
+			dbglog( "Read Name [%s] from command line arguments.\n", (char*)result[ 0 ]);
+			g_UseArgsName = 1;
+			strcpy( g_ArgsName, (char*)result[ 0 ] );
+		}
+		if( (BOOL)result[1] )
+		{
+			dbglog( "Disabling workbench icon.\n");
+			g_ShowWBIcon = 0;
+		}
+		return TRUE;
+	}
+	else
 	{
 		printf( "Failed to read command line arguments.\n" );
 		return FALSE;
 	}
 
-	//Get the arguments we need
-	if( (BOOL)result[ 0 ] )
-	{
-		dbglog( "Disabling workbench icon.\n");
-		g_ShowWBIcon = 0;
-		return TRUE;
-	}
+	FreeArgs(rdargs);
 
 	return TRUE;
 }
 
 int main(int argc, char *argv[])
 {
-	dbglog( "starting ApolloExplorer.\n" );
+	dbglog( "starting ApolloExplorer Version: %s\n", VERSION_STRING );
 
 	struct sockaddr_in addr __attribute__((aligned(4)));
 	//SOCKET s = 0;

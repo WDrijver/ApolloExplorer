@@ -1,3 +1,12 @@
+1.2
+  * Server side detects dead connections properly now and removes them
+  * Apollo V2 and V4 Board Detection improved and V4-A6000 (UniCorn) added
+  * Icon added for V4-A6000 (UniCorn)
+  * Makefile and Build script added for comile on ApolloCrossDev
+  * GetOSName and GetOSVersion integrated into GetOSNameandVersion
+  * ApolloBoot and ApolloOS are now detected correct incl. version
+  * Added NAME/S to enable Command-Line setting of Server Name
+
 apolloexplorer (1.1.4-0) RELEASED; urgency=low
   * Fixed bug where acp hangs when an upload is not possible
 

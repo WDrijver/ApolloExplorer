@@ -17,7 +17,7 @@ C_INCL_SYS	= $(PREFIX)/$(TARGET)/sys-include
 C_INCL_NDK  = $(PREFIX)/$(TARGET)/ndk32-include/Include_H
 C_INCL_ALL 	= -I. -I$(C_INCL_CLB) -I$(C_INCL_SYS) -I$(C_INCL_NDK)
 
-C_OPTIONS 	= -O2 -m68080 -m68881 -ffast-math -fomit-frame-pointer -DREGPARM
+C_OPTIONS 	= -O2 -m68040 -m68881 -ffast-math -fomit-frame-pointer -DREGPARM
 C_OPTIONS_EXTRA = -std=c99 -fstack-protector-all -Wno-pointer-sign
 C_FLAGS = $(C_LIB) $(C_OPTIONS) $(C_INCL_ALL)
 
@@ -38,7 +38,7 @@ ApolloExplorerTool			= ApolloExplorerTool
 ApolloExplorerTool_SRC 		= ApolloExplorerTool.c
 
 ${ApolloExplorerServer}: 
-	$(C_COMPILER) ${C_FLAGS} -I.. ${ApolloExplorerServer_SRC} -lamiga -o ${ApolloExplorerServer}
+	@$(C_COMPILER) ${C_FLAGS} -I.. ${ApolloExplorerServer_SRC} -lamiga -o ${ApolloExplorerServer}
 	
 ${ApolloExplorerTool}:
 	$(C_COMPILER) ${C_FLAGS} ${ApolloExplorerTool_SRC} -lamiga -o ${ApolloExplorerTool}
