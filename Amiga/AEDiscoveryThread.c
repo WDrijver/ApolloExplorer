@@ -251,7 +251,7 @@ static void getHardwareName( char *name, LONG len )
 			snprintf( name, len, "%s", "V4-A6000 (UniCorn)" );
 			break;
 		default:
-			snprintf( name, len, "%s", "Unknown" );
+			snprintf( name, len, "%s", "Amiga" );
 			break;
 	}
 
@@ -695,7 +695,7 @@ static void discoveryThread()
 
 	shutdown:
 	dbglog( "[discovery] Shutting down.\n" );
-	Delay( 100 );
+	//Delay( 100 );
 
 	//Clear out and then free the message port
 	dbglog( "[discovery] Removing message port.\n" );
@@ -713,6 +713,8 @@ static void discoveryThread()
 	FreeVec( announceMessage );
 	FreeVec( requestorAddress );
 
+
+
 #if ENABLE_DISCOVERY_REPLY
 	//Now close the socket because we are done here
 	dbglog( "[discoverySocket] Closing client thread for socket 0x%08x.\n", discoverySocket );
@@ -724,6 +726,8 @@ static void discoveryThread()
 
 	dbglog( "[discovery] Closing socket base.\n" );
 	CloseLibrary( SocketBase );
+
+
 
 	return;
 }

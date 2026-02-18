@@ -2,6 +2,6 @@
 
 cd Amiga
 make clean
-make -j16
+make all -j16
 cd ..
 make clean
