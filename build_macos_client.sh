@@ -6,4 +6,4 @@ make clean
 make -j16
 make clean
 
-cp icons/ApolloExplorer.icns build/ApolloExplorer.app/Contents/Resources/
+cp ApolloExplorerPC/icons/ApolloExplorer.icns ApolloExplorerPC/ApolloExplorer.app/Contents/Resources/

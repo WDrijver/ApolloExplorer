@@ -2,10 +2,14 @@
   * Server side detects dead connections properly now and removes them
   * Apollo V2 and V4 Board Detection improved and V4-A6000 (UniCorn) added
   * Icon added for V4-A6000 (UniCorn)
-  * Makefile and Build script added for comile on ApolloCrossDev
+  * Makefile and Build script added for compile on ApolloCrossDev
   * GetOSName and GetOSVersion integrated into GetOSNameandVersion
   * ApolloBoot and ApolloOS are now detected correct incl. version
-  * Added NAME/S to enable Command-Line setting of Server Name
+  * Added NAME/K to enable Command-Line setting of Server Name (NAME=My-V4-Name-Here)
+  * Added ApolloExplorer.incs Icon file for MacOS (before it was a blankm Icon in Dock)
+  * Added 256 pixel icons for high resolution Client display
+  * Adjusted termination process to (hopefully) avoid the AEDiscovery thread errors after killing ApolloExplorerSrv
+  
 
 apolloexplorer (1.1.4-0) RELEASED; urgency=low
   * Fixed bug where acp hangs when an upload is not possible

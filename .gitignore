@@ -1,10 +1,11 @@
 Amiga/ApolloExplorerSrv
 ApolloExplorerPC/ApolloExplorer
 acp/acp
-
 Makefile
 acp/Makefile
 AmigaIconReader/Makefile
 ApolloExplorerPC/Makefile
+ApolloExplorerPC/ApolloExplorer.app
 ApolloExplorerPC/qmake_qmake_qm_files.qrc
 qmake_qmake_qm_files.qrc
+ApolloExplorerPC/.DS_Store
