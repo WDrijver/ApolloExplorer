@@ -15,9 +15,9 @@ EQ            = =
 CC            = /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang
 CXX           = /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang++
 DEFINES       = -DQT_NO_DEBUG -DQT_WIDGETS_LIB -DQT_GUI_LIB -DQT_CORE_LIB
-CFLAGS        = -pipe -O2 $(EXPORT_ARCH_ARGS) -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk -mmacosx-version-min=10.13 -Wall -Wextra -fPIC $(DEFINES)
-CXXFLAGS      = -pipe -stdlib=libc++ -O2 -std=gnu++1z $(EXPORT_ARCH_ARGS) -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk -mmacosx-version-min=10.13 -Wall -Wextra -fPIC $(DEFINES)
-INCPATH       = -I. -I/opt/homebrew/Cellar/qt@5/5.15.18/lib/QtWidgets.framework/Headers -I/opt/homebrew/Cellar/qt@5/5.15.18/lib/QtGui.framework/Headers -I/opt/homebrew/Cellar/qt@5/5.15.18/lib/QtCore.framework/Headers -I. -I/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk/System/Library/Frameworks/OpenGL.framework/Headers -I. -I/opt/homebrew/Cellar/qt@5/5.15.18/mkspecs/macx-clang -F/opt/homebrew/Cellar/qt@5/5.15.18/lib
+CFLAGS        = -pipe -O2 $(EXPORT_ARCH_ARGS) -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.4.sdk -mmacosx-version-min=10.13 -Wall -Wextra -fPIC $(DEFINES)
+CXXFLAGS      = -pipe -stdlib=libc++ -O2 -std=gnu++1z $(EXPORT_ARCH_ARGS) -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.4.sdk -mmacosx-version-min=10.13 -Wall -Wextra -fPIC $(DEFINES)
+INCPATH       = -I. -I/opt/homebrew/Cellar/qt@5/5.15.18/lib/QtWidgets.framework/Headers -I/opt/homebrew/Cellar/qt@5/5.15.18/lib/QtGui.framework/Headers -I/opt/homebrew/Cellar/qt@5/5.15.18/lib/QtCore.framework/Headers -I. -I/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.4.sdk/System/Library/Frameworks/OpenGL.framework/Headers -I. -I/opt/homebrew/Cellar/qt@5/5.15.18/mkspecs/macx-clang -F/opt/homebrew/Cellar/qt@5/5.15.18/lib
 QMAKE         = /opt/homebrew/opt/qt@5/bin/qmake
 DEL_FILE      = rm -f
 CHK_DIR_EXISTS= test -d
@@ -39,7 +39,7 @@ COMPRESS      = gzip -9f
 DISTNAME      = AmigaIconReader1.0.0
 DISTDIR = /Users/willemdrijver/ApolloExplorer/AmigaIconReader/.tmp/AmigaIconReader1.0.0
 LINK          = /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang++
-LFLAGS        = -stdlib=libc++ -headerpad_max_install_names $(EXPORT_ARCH_ARGS) -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk -mmacosx-version-min=10.13 -Wl,-rpath,@executable_path/../Frameworks
+LFLAGS        = -stdlib=libc++ -headerpad_max_install_names $(EXPORT_ARCH_ARGS) -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.4.sdk -mmacosx-version-min=10.13 -Wl,-rpath,@executable_path/../Frameworks
 LIBS          = $(SUBLIBS) -F/opt/homebrew/Cellar/qt@5/5.15.18/lib -framework QtWidgets -framework QtGui -framework AppKit -framework Metal -framework QtCore -framework DiskArbitration -framework IOKit -framework OpenGL   
 AR            = /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/ar cq
 RANLIB        = /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/ranlib -s
@@ -276,7 +276,7 @@ TARGET        = AmigaIconReader.app/Contents/MacOS/AmigaIconReader
 
 ####### Custom Variables
 EXPORT_QMAKE_MAC_SDK = macosx
-EXPORT_QMAKE_MAC_SDK_VERSION = 26.2
+EXPORT_QMAKE_MAC_SDK_VERSION = 26.4
 EXPORT_QMAKE_XCODE_DEVELOPER_PATH = /Applications/Xcode.app/Contents/Developer
 EXPORT__QMAKE_STASH_ = /Users/willemdrijver/ApolloExplorer/.qmake.stash
 EXPORT_VALID_ARCHS = arm64
@@ -769,7 +769,7 @@ compiler_moc_predefs_make_all: moc_predefs.h
 compiler_moc_predefs_clean:
 	-$(DEL_FILE) moc_predefs.h
 moc_predefs.h: /opt/homebrew/Cellar/qt@5/5.15.18/mkspecs/features/data/dummy.cpp
-	/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang++ -pipe -stdlib=libc++ -O2 -std=gnu++1z $(EXPORT_ARCH_ARGS) -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk -mmacosx-version-min=10.13 -Wall -Wextra -dM -E -o moc_predefs.h /opt/homebrew/Cellar/qt@5/5.15.18/mkspecs/features/data/dummy.cpp
+	/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang++ -pipe -stdlib=libc++ -O2 -std=gnu++1z $(EXPORT_ARCH_ARGS) -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.4.sdk -mmacosx-version-min=10.13 -Wall -Wextra -dM -E -o moc_predefs.h /opt/homebrew/Cellar/qt@5/5.15.18/mkspecs/features/data/dummy.cpp
 
 compiler_moc_header_make_all: moc_AmigaInfoFile.cpp moc_mainwindow.cpp
 compiler_moc_header_clean:
@@ -783,7 +783,7 @@ moc_AmigaInfoFile.cpp: AmigaInfoFile.h \
 		/opt/homebrew/Cellar/qt@5/5.15.18/lib/QtGui.framework/Headers/qpixmap.h \
 		moc_predefs.h \
 		/opt/homebrew/Cellar/qt@5/5.15.18/bin/moc
-	/opt/homebrew/Cellar/qt@5/5.15.18/bin/moc $(DEFINES) --include /Users/willemdrijver/ApolloExplorer/AmigaIconReader/moc_predefs.h -I/opt/homebrew/Cellar/qt@5/5.15.18/mkspecs/macx-clang -I/Users/willemdrijver/ApolloExplorer/AmigaIconReader -I/opt/homebrew/Cellar/qt@5/5.15.18/lib/QtWidgets.framework/Headers -I/opt/homebrew/Cellar/qt@5/5.15.18/lib/QtGui.framework/Headers -I/opt/homebrew/Cellar/qt@5/5.15.18/lib/QtCore.framework/Headers -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/gcc/x86_64-linux-gnu/13/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include -F/opt/homebrew/Cellar/qt@5/5.15.18/lib AmigaInfoFile.h -o moc_AmigaInfoFile.cpp
+	/opt/homebrew/Cellar/qt@5/5.15.18/bin/moc $(DEFINES) --include /Users/willemdrijver/ApolloExplorer/AmigaIconReader/moc_predefs.h -I/opt/homebrew/Cellar/qt@5/5.15.18/mkspecs/macx-clang -I/Users/willemdrijver/ApolloExplorer/AmigaIconReader -I/opt/homebrew/Cellar/qt@5/5.15.18/lib/QtWidgets.framework/Headers -I/opt/homebrew/Cellar/qt@5/5.15.18/lib/QtGui.framework/Headers -I/opt/homebrew/Cellar/qt@5/5.15.18/lib/QtCore.framework/Headers -I/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.4.sdk/usr/include/c++/v1 -I/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/21/include -I/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.4.sdk/usr/include -I/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include -F/opt/homebrew/Cellar/qt@5/5.15.18/lib AmigaInfoFile.h -o moc_AmigaInfoFile.cpp
 
 moc_mainwindow.cpp: mainwindow.h \
 		/opt/homebrew/Cellar/qt@5/5.15.18/lib/QtWidgets.framework/Headers/QMainWindow \
@@ -797,7 +797,7 @@ moc_mainwindow.cpp: mainwindow.h \
 		/opt/homebrew/Cellar/qt@5/5.15.18/lib/QtGui.framework/Headers/qpixmap.h \
 		moc_predefs.h \
 		/opt/homebrew/Cellar/qt@5/5.15.18/bin/moc
-	/opt/homebrew/Cellar/qt@5/5.15.18/bin/moc $(DEFINES) --include /Users/willemdrijver/ApolloExplorer/AmigaIconReader/moc_predefs.h -I/opt/homebrew/Cellar/qt@5/5.15.18/mkspecs/macx-clang -I/Users/willemdrijver/ApolloExplorer/AmigaIconReader -I/opt/homebrew/Cellar/qt@5/5.15.18/lib/QtWidgets.framework/Headers -I/opt/homebrew/Cellar/qt@5/5.15.18/lib/QtGui.framework/Headers -I/opt/homebrew/Cellar/qt@5/5.15.18/lib/QtCore.framework/Headers -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/gcc/x86_64-linux-gnu/13/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include -F/opt/homebrew/Cellar/qt@5/5.15.18/lib mainwindow.h -o moc_mainwindow.cpp
+	/opt/homebrew/Cellar/qt@5/5.15.18/bin/moc $(DEFINES) --include /Users/willemdrijver/ApolloExplorer/AmigaIconReader/moc_predefs.h -I/opt/homebrew/Cellar/qt@5/5.15.18/mkspecs/macx-clang -I/Users/willemdrijver/ApolloExplorer/AmigaIconReader -I/opt/homebrew/Cellar/qt@5/5.15.18/lib/QtWidgets.framework/Headers -I/opt/homebrew/Cellar/qt@5/5.15.18/lib/QtGui.framework/Headers -I/opt/homebrew/Cellar/qt@5/5.15.18/lib/QtCore.framework/Headers -I/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.4.sdk/usr/include/c++/v1 -I/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/21/include -I/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.4.sdk/usr/include -I/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include -F/opt/homebrew/Cellar/qt@5/5.15.18/lib mainwindow.h -o moc_mainwindow.cpp
 
 compiler_moc_objc_header_make_all:
 compiler_moc_objc_header_clean:

@@ -9,3 +9,13 @@ ApolloExplorerPC/ApolloExplorer.app
 ApolloExplorerPC/qmake_qmake_qm_files.qrc
 qmake_qmake_qm_files.qrc
 ApolloExplorerPC/.DS_Store
+.DS_Store
+.qmake.stash
+Makefile
+acp/acp
+acp/Makefile
+AmigaIconReader/.DS_Store
+AmigaIconReader/Makefile
+AmigaIconReader/AmigaIconReader.app/Contents/MacOS/AmigaIconReader
+ApolloExplorerPC/.DS_Store
+ApolloExplorerPC/Makefile
