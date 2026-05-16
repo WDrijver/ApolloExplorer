@@ -20,7 +20,7 @@ DialogDownloadFile::DialogDownloadFile(QWidget *parent) :
     ui(new Ui::DialogDownloadFile),
     m_DownloadThread(),
     m_DownloadList( ),
-    m_Mutex( QMutex::Recursive ),
+    m_Mutex(),
     m_FilesToOpen( ),
     m_OperationState( IDLE ),
     m_ConnectionState( DISCONNECTED )

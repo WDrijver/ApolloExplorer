@@ -8,8 +8,23 @@ win32:RC_ICONS += icons/FirebirdHW.ico
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
-CONFIG += c++11
+CONFIG += c++17
 QMAKE_CXXFLAGS += -O0 -g
+
+# Copy Qt (and MinGW) DLLs next to the .exe so it runs outside Qt Creator / without PATH.
+# https://doc.qt.io/qt-6/windows-deployment.html
+# Note: Do not pass --debug to windeployqt for MinGW kits ΓÇö prebuilt Qt ships release
+# Qt DLLs/plugins only; --debug expects qwindowsd.dll etc. and fails.
+#
+# Run windeployqt for both debug\ and release\ outputs when each .exe exists. With the
+# Debug kit, qmake only embeds the debug deploy if we gate on CONFIG; then Release
+# never gets DLLs until a Release link happens. Deploying whichever exe exists fixes that.
+win32:equals(QMAKE_HOST.os, Windows) {
+    WINDEPLOYQT = $$shell_path($$[QT_INSTALL_BINS]/windeployqt.exe)
+    DEPLOY_DEBUG_EXE = $$shell_path($$OUT_PWD/debug/$${TARGET}.exe)
+    DEPLOY_RELEASE_EXE = $$shell_path($$OUT_PWD/release/$${TARGET}.exe)
+    QMAKE_POST_LINK += cmd /c if exist $$quote($$DEPLOY_DEBUG_EXE) $$WINDEPLOYQT --compiler-runtime $$quote($$DEPLOY_DEBUG_EXE)$$escape_expand(\\n\\t)cmd /c if exist $$quote($$DEPLOY_RELEASE_EXE) $$WINDEPLOYQT --compiler-runtime $$quote($$DEPLOY_RELEASE_EXE)
+}
 
 # You can make your code fail to compile if it uses deprecated APIs.
 # In order to do so, uncomment the following line.
