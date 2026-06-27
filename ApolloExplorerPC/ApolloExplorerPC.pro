@@ -7,11 +7,11 @@ linux: LIBS += -lX11
 win32:RC_ICONS += icons/FirebirdHW.ico
 
 CONFIG += c++17
-QMAKE_CXXFLAGS += -O0 -g
+QMAKE_CXXFLAGS_DEBUG += -O0
 
 # Copy Qt (and MinGW) DLLs next to the .exe so it runs outside Qt Creator / without PATH.
 # https://doc.qt.io/qt-6/windows-deployment.html
-# Note: Do not pass --debug to windeployqt for MinGW kits ΓÇö prebuilt Qt ships release
+# Note: Do not pass --debug to windeployqt for MinGW kits - prebuilt Qt ships release
 # Qt DLLs/plugins only; --debug expects qwindowsd.dll etc. and fails.
 #
 # Run windeployqt for both debug\ and release\ outputs when each .exe exists. With the
@@ -19,9 +19,11 @@ QMAKE_CXXFLAGS += -O0 -g
 # never gets DLLs until a Release link happens. Deploying whichever exe exists fixes that.
 win32:equals(QMAKE_HOST.os, Windows) {
     WINDEPLOYQT = $$shell_path($$[QT_INSTALL_BINS]/windeployqt.exe)
-    DEPLOY_DEBUG_EXE = $$shell_path($$OUT_PWD/debug/$${TARGET}.exe)
-    DEPLOY_RELEASE_EXE = $$shell_path($$OUT_PWD/release/$${TARGET}.exe)
-    QMAKE_POST_LINK += cmd /c if exist $$quote($$DEPLOY_DEBUG_EXE) $$WINDEPLOYQT --compiler-runtime $$quote($$DEPLOY_DEBUG_EXE)$$escape_expand(\\n\\t)cmd /c if exist $$quote($$DEPLOY_RELEASE_EXE) $$WINDEPLOYQT --compiler-runtime $$quote($$DEPLOY_RELEASE_EXE)
+
+    CONFIG(debug, debug|release): DEPLOY_EXE = $$shell_path($$OUT_PWD/debug/$${TARGET}.exe)
+    CONFIG(release, debug|release): DEPLOY_EXE = $$shell_path($$OUT_PWD/release/$${TARGET}.exe)
+
+    QMAKE_POST_LINK += cmd /c if exist $$quote($$DEPLOY_EXE) $$quote($$WINDEPLOYQT) --compiler-runtime $$quote($$DEPLOY_EXE)
 }
 
 # Fail the build on APIs Qt marked deprecated before this version (6.11.1 => 0x060B01). Adjust when upgrading Qt.
