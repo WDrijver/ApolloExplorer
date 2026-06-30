@@ -1,9 +1,10 @@
 #!/bin/bash
+
 brew install qt
 
 rm -r -f .qmake.stash
-
 clear
+
 qmake -recursive
 make clean
 make -j16
