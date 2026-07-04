@@ -3,6 +3,19 @@ echo ""
 echo -e "\033[1m\033[37m########## \033[31mApollo\033[1;30mExplorer MacOS Client - Release 1.3 \033[37m###########\033[0m\033[36m"
 echo ""
 
+echo -e "\033[1m\033[37m1. Checking Prerequisites\033[0m"
+
+qmake
+if [ $? -ne 0 ]; then
+    echo -e "\033[1m\033[31mqmake not found\033[0m"
+    echo -e "\033[1m\033[31mPlease install QT6 (homebrew, QT online installer or build from source)\033[0m"
+    echo -e "\033[1m\033[31mand make sure qmake is in your PATH\033[0m"
+    exit 1
+fi
+
+
+#brew install -qy qt@6 >>log.txt 2>>log.txt
+
 echo -e "\033[1m\033[37m1. Clean House\033[0m"
 rm -r -f .qmake.stash >log.txt 2>>log.txt
 cd acp

@@ -3,6 +3,9 @@ echo ""
 echo -e "\033[1m\033[37m########## \033[31mApollo\033[1;30mExplorer Linux Client - Release 1.3 \033[37m###########\033[0m\033[36m"
 echo ""
 
+echo -e "\033[1m\033[37m1. Checking Prerequisites\033[0m"
+
+
 echo -e "\033[1m\033[37m1. Clean House\033[0m"
 rm -r -f .qmake.stash >log.txt 2>>log.txt
 cd acp
