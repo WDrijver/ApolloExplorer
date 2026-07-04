@@ -6,6 +6,13 @@ echo -e "\033[1m\033[37m########## \033[31mApollo\033[1;30mExplorer MacOS Client
 echo ""
 
 echo -e "\033[1m\033[37m0. Checking Prerequisites\033[0;30m"
+
+sw_vers | grep "macOS" >log.txt 2>>log.txt
+if [ $? -ne 0 ]; then
+    echo -e "\033[1m\033[31mThis script can only be used on macOS\033[0;30m"
+    exit 1
+fi
+
 qmake >>log.txt 2>>log.txt
 if [ $? -ne 0 ]; then
     echo -e "\033[1m\033[31mQt qmake command not found\033[0;30m"

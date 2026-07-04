@@ -6,7 +6,15 @@ echo -e "\033[1m\033[37m########## \033[31mApollo\033[1;30mExplorer Linux Client
 echo ""
 
 echo -e "\033[1m\033[37m1. Checking Prerequisites\033[0m"
-
+cat /etc/os-release | grep -i "debian" >log.txt 2>>log.txt
+if [ $? -ne 0 ]; then
+    echo -e "\033[1m\033[31mThis script is only tested on Debian-based Linux distributions (Debian, Ubuntu, etc)\033[0;30m"
+    printf 'Do you want to continue anyway? (y/n):'
+    read answer
+    if [ "$answer" != "${answer#[Nn]}" ] ;then 
+        exit 1
+    fi
+fi
 
 echo -e "\033[1m\033[37m1. Clean House\033[0m"
 rm -r -f .qmake.stash >log.txt 2>>log.txt
