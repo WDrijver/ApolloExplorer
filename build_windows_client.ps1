@@ -72,7 +72,7 @@ mkdir ApolloExplorer-Windows >$null 2>$null 3>$null
 Move-Item .\acp\release\acp.exe .\ApolloExplorer-Windows\acp.exe -Force 1>$null 2>$null 3>$null
 Move-Item .\ApolloExplorerPC\release\ApolloExplorer.exe .\ApolloExplorer-Windows\ApolloExplorer.exe -Force 1>$null 2>$null 3>$null
 windeployqt.exe --release .\ApolloExplorer-Windows\ApolloExplorer.exe 1>$null 2>$null 3>$null
-exit
+
 Write-Host "${Bold}${White}5. Clean Windows Project${Grey}${BoldReset}"
 mingw32-make.exe distclean 1>$null 2>$null 3>$null
 Remove-Item -Recurse -Force .\acp\debug\ 1>$null 2>$null 3>$null
