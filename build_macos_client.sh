@@ -30,14 +30,8 @@ fi
 
 echo -e "\033[1m\033[37m1. Clean House\033[0m"
 rm -r -f .qmake.stash >log.txt 2>>log.txt
-cd acp
-make clean distclean >>log.txt 2>>log.txt
-cd ../AmigaIconReader
-make clean distclean >>log.txt 2>>log.txt
-cd ../Amiga
 make clean distclean >>log.txt 2>>log.txt
 cd ../ApolloExplorerPC
-make clean distclean >>log.txt 2>>log.txt
 rm -r -f ApolloExplorer.zip >>log.txt 2>>log.txt
 rm -r -f ApolloExplorer.dmg >>log.txt 2>>log.txt
 cd ..
