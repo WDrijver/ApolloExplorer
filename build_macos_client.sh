@@ -39,6 +39,7 @@ cd ..
 
 echo -e "\033[1m\033[37m2. Create macOS Project\033[0m\033[30m"
 
+echo ""
 printf 'Do you want to create macOS Universal bundle (Intel + Silicon)?:\n\033[1mIMPORTANT:\033[22m This requires a Qt 6 build with both x86_64 and arm64 support (y/n) '
 read answer
 if [ "$answer" != "${answer#[Yy]}" ] ;then
@@ -47,6 +48,7 @@ else
     qmake -recursive MACOSX_DEPLOYMENT_TARGET="12.7.6" >>log.txt 2>>log.txt
 fi
 
+echo ""
 echo -e "\033[1m\033[37m3. Make macOS Project\033[0m"
 make -j16 >>log.txt 2>>log.txt
 
@@ -56,29 +58,27 @@ if [ $? -eq 0 ]; then
     exit 1
 fi
 
-echo -e "\033[0;30mProceeed with Signing, Notarization and Packaging?\nRequires Apple Developer Team-ID in ${APPLETEAMID}\nChoose No unless you understand the question (y/n)? "
+echo ""
+printf '\033[0;30mProceeed with Signing, Notarization and Packaging?\nRequires Apple Developer Team-ID in ${APPLETEAMID}\nChoose No unless you understand the question (y/n)? '
 read answer
 if [ "$answer" != "${answer#[Yy]}" ] ;then 
-    echo ""
     cd ApolloExplorerPC
-    
+    echo ""
     echo -e "\033[1m\033[37mA. QT Deploy MacOS with static Libs + Hardening + Signing\033[0m"
     macdeployqt ApolloExplorer.app -verbose=2 -sign-for-notarization=${APPLETEAMID} >>log.txt 2>>log.txt
-
     echo -e "\033[1m\033[37mB. ZIP ApolloExplorer.app Bundle (keep Symlinks intact)\033[0m"
     zip -r -y ApolloExplorer.zip ApolloExplorer.app >>log.txt 2>>log.txt
-    
     echo -e "\033[1m\033[37mC. Notarize ApolloExplorer.app Bundle with Apple Developer ID (${APPLETEAMID})\033[0;30m\n"
     xcrun notarytool submit ApolloExplorer.zip --keychain-profile "AC_PASSWORD" --wait   
-
+    echo ""
     echo -e "\033[1m\033[37mD. Staple ApolloExplorer.app Bundle with Notarization Ticket\033[0;30m\n"
     xcrun stapler staple ApolloExplorer.app  
-
     echo -e "\n\033[1m\033[37mE. Cleanup & Finish\033[0m\n"
     rm -r -f ApolloExplorer.zip
     cd ..
 fi
 
+echo ""
 echo -e "\033[1m\033[37m4. Install macOS Project\033[0m"
 mkdir -p ApolloExplorer-macOS
 mv ApolloExplorerPC/ApolloExplorer.app ApolloExplorer-macOS/
