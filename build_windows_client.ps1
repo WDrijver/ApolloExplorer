@@ -10,13 +10,7 @@ $LightBlue  = "$([char]27)[36m"
 $White      = "$([char]27)[37m"
 $Grey       = "$([char]27)[30m"
 
-cls
-Write-Host ""
-Write-Host ""
-Write-Host ""
-Write-Host ""
-Write-Host ""
-Write-Host ""
+Clear-Host
 Write-Host ""
 Write-Host "${Bold}${White}########## ${Red}Apollo${Grey}Explorer Windows Client - Release 1.3 ${White}###########"
 Write-Host ""
@@ -39,6 +33,11 @@ try {
     $Answer = Read-Host "* No QT6 FrameWork found, do you want to install QT6? (y/n) "
     $Answer = $Answer.Trim().ToLower()
     if($Answer -eq "n") {exit}
+    Write-Host ""
+    Write-Host ""
+    Write-Host ""
+    Write-Host ""
+    Write-Host ""
     Write-Host "* Installing QT6 FrameWork (qt6.11.1-essentials-dev) to $QT6InstallPath"
     Invoke-WebRequest https://download.qt.io/official_releases/online_installers/qt-online-installer-windows-x64-online.exe -O qt-online-installer-windows-x64-online.exe | Out-Null
     .\qt-online-installer-windows-x64-online.exe --root $QT6InstallPath --accept-licenses --default-answer --confirm-command install qt6.11.1-essentials-dev | Out-Null
@@ -52,20 +51,27 @@ try {
 }
 
 Write-Host "${Bold}${White}1. Clean House${Grey}${BoldReset}"
-mingw32-make.exe distclean | Out-Null 
+mingw32-make.exe distclean 1>$null 2>$null 3>$null 
 
 Write-Host "${Bold}${White}2. Create Windows Project${Grey}${BoldReset}"
-qmake -recursive -config release 
+qmake -recursive -config release  1>$null 2>$null 3>$null
 
 Write-Host "${Bold}${White}3. Make Windows Project${Grey}${BoldReset}"
-mingw32-make.exe -j8 | Out-Null 
+mingw32-make.exe -j8 1>$null 2>$null 3>$null
 
 Write-Host "${Bold}${White}4. Install Windows Project${Grey}${BoldReset}"
-
+mkdir ApolloExplorer-Windows >$null 2>$null 3>$null
+Move-Item .\acp\release\acp .\ApolloExplorer-Windows\acp -Force 1>$null 2>$null 3>$null
+Move-Item .\ApolloExplorerPC\release\ApolloExplorerPC.exe .\ApolloExplorer-Windows\ApolloExplorerPC.exe -Force 1>$null 2>$null 3>$null
+windeployqt.exe .\ApolloExplorer-Windows\ApolloExplorerPC.exe 1>$null 2>$null 3>$null
 
 Write-Host "${Bold}${White}5. Clean Windows Project${Grey}${BoldReset}"
+Remove-Item -Recurse -Force .\acp\debug\ 1>$null 2>$null 3>$null
+Remove-Item -Recurse -Force .\acp\release\ 1>$null 2>$null 3>$null
+Remove-Item -Recurse -Force .\ApolloExplorerPC\debug\ 1>$null 2>$null 3>$null
+Remove-Item -Recurse -Force .\ApolloExplorerPC\release\ 1>$null 2>$null 3>$null
+Remove-Item -Recurse -Force .\AmigaIconReader\debug\ 1>$null 2>$null 3>$null
+Remove-Item -Recurse -Force .\AmigaIconReader\release\ 1>$null 2>$null 3>$null
+mingw32-make.exe distclean 1>$null 2>$null 3>$null
 
-
-
-exit
 
