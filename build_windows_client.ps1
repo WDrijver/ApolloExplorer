@@ -1,4 +1,4 @@
-$Bold       = "$([char]27)[1m" 
+$Bold       = "$([char]27)[1m"
 $BoldReset  = "$([char]27)[22m"
 
 $Red        = "$([char]27)[31m"
@@ -12,19 +12,9 @@ $Grey       = "$([char]27)[30m"
 
 Clear-Host
 Write-Host ""
-Write-Host "${Bold}${White}########## ${Red}Apollo${Grey}Explorer Windows Client - Release 1.4 ${White}###########"
+Write-Host "${Bold}${White}########## ${Red}Apollo${Grey}Explorer Windows Client - Release 1.5 ${White}###########"
 Write-Host ""
 Write-Host "${Bold}${White}0. Checking Prerequisites${Grey}${BoldReset}"
-
-# TODO: Check if we run on Windows
-$UserPath = Resolve-Path ~
-$QT6InstallPath = Join-Path $UserPath "\Qt6"
-$QT6CommandPath =  Join-Path $QT6InstallPath "\6.11.1\mingw_64\bin"  
-$env:Path += ";"
-$env:Path += $QT6CommandPath
-$QT6ToolsPath = Join-Path $QT6InstallPath "\Tools\mingw1310_64\bin"  
-$env:Path += ";"
-$env:Path += $QT6ToolsPath
 
 # build log artifacts
 $ArtifactsPath = Join-Path $PSScriptRoot "artifacts"
@@ -50,6 +40,17 @@ if (Test-Path $LogSuccessPath) {
     New-Item -ItemType File -Path $LogSuccessPath -Force | Out-Null
 }
 
+# local installer
+$QtInstallerPath = Join-Path $ArtifactsPath "qt-online-installer-windows-x64-online.exe"
+$QT6InstallPath = Join-Path $ArtifactsPath "Qt6"
+New-Item -ItemType Directory -Path $QT6InstallPath -Force | Out-Null
+$QT6CommandPath =  Join-Path $QT6InstallPath "6.11.1\mingw_64\bin"
+$env:Path += ";"
+$env:Path += $QT6CommandPath
+$QT6ToolsPath = Join-Path $QT6InstallPath "Tools\mingw1310_64\bin"
+$env:Path += ";"
+$env:Path += $QT6ToolsPath
+
 try {
     Get-Command "qmake" -ErrorAction Stop | Out-Null
     Write-Host "* QT6 FrameWork found"
@@ -60,27 +61,68 @@ try {
     Write-Host ""
     Write-Host ""
     Write-Host "* Installing QT6 FrameWork (qt6.11.1-essentials-dev) to $QT6InstallPath"
-    Invoke-WebRequest https://download.qt.io/official_releases/online_installers/qt-online-installer-windows-x64-online.exe -O qt-online-installer-windows-x64-online.exe | Out-Null
-    .\qt-online-installer-windows-x64-online.exe --root $QT6InstallPath --accept-licenses --default-answer --confirm-command install qt6.11.1-essentials-dev | Out-Null
+    Invoke-WebRequest "https://download.qt.io/official_releases/online_installers/qt-online-installer-windows-x64-online.exe" -OutFile $QtInstallerPath
+    & $QtInstallerPath `
+        --root $QT6InstallPath `
+        --accept-licenses `
+        --accept-obligations `
+        --default-answer `
+        --confirm-command `
+        install qt6.11.1-essentials-dev `
+        1>>$LogSuccessPath `
+        2>>$LogErrorsPath
+
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "${Bold}${Red}* ERROR Qt installer failed with exit code $LASTEXITCODE${Grey}${BoldReset}"
+        Write-Host "${Bold}${Yellow}* Check $LogErrorsPath and $LogSuccessPath for details.${Grey}${BoldReset}"
+        exit 1
+    }
+
     try {
         Get-Command "qmake" -ErrorAction Stop | Out-Null
-        Write-Host "* QT6 FrameWork succesfully installed"
-        Remove-Item "qt-online-installer-windows-x64-online.exe"
+        Write-Host "* QT6 FrameWork successfully installed"
+
+        if (Test-Path $QtInstallerPath) {
+            Remove-Item -Force $QtInstallerPath
+        }
     } catch {
-        Write-Host "* ERROR Installing QT6"
+        Write-Host "${Bold}${Red}* ERROR Installing QT6. qmake was not found after installation.${Grey}${BoldReset}"
+        Write-Host "${Bold}${Yellow}* Build cannot continue without qmake, mingw32-make.exe, and windeployqt.exe.${Grey}${BoldReset}"
+        Write-Host "${Bold}${Yellow}* Expected Qt install path: $QT6InstallPath${Grey}${BoldReset}"
+        exit 1
+    }
+}
+
+$RequiredCommands = @(
+    "qmake",
+    "mingw32-make.exe",
+    "windeployqt.exe"
+)
+
+foreach ($Command in $RequiredCommands) {
+    try {
+        Get-Command $Command -ErrorAction Stop | Out-Null
+    } catch {
+        Write-Host "${Bold}${Red}* ERROR Missing required command: $Command${Grey}${BoldReset}"
+        Write-Host "${Bold}${Yellow}* Check that Qt 6.11.1 MinGW paths are installed and added to PATH.${Grey}${BoldReset}"
+        Write-Host "${Bold}${Yellow}* Expected Qt bin path: $QT6CommandPath${Grey}${BoldReset}"
+        Write-Host "${Bold}${Yellow}* Expected MinGW tools path: $QT6ToolsPath${Grey}${BoldReset}"
+        exit 1
     }
 }
 
 Write-Host "${Bold}${White}1. Clean House${Grey}${BoldReset}"
-mingw32-make.exe distclean 1>>$LogSuccessPath 2>>$LogErrorsPath 3>>$LogWarningsPath 
-Remove-Item -Recurse -Force .\acp\debug\ 1>>$LogSuccessPath 2>>$LogErrorsPath 3>>$LogWarningsPath
-Remove-Item -Recurse -Force .\acp\release\ 1>>$LogSuccessPath 2>>$LogErrorsPath 3>>$LogWarningsPath
-Remove-Item -Recurse -Force .\ApolloExplorerPC\debug\ 1>>$LogSuccessPath 2>>$LogErrorsPath 3>>$LogWarningsPath
-Remove-Item -Recurse -Force .\ApolloExplorerPC\release\ 1>>$LogSuccessPath 2>>$LogErrorsPath 3>>$LogWarningsPath
-Remove-Item -Recurse -Force .\AmigaIconReader\debug\ 1>>$LogSuccessPath 2>>$LogErrorsPath 3>>$LogWarningsPath
-Remove-Item -Recurse -Force .\AmigaIconReader\release\ 1>>$LogSuccessPath 2>>$LogErrorsPath 3>>$LogWarningsPath
-Remove-Item -Recurse -Force .\ApolloExplorer-Windows 1>>$LogSuccessPath 2>>$LogErrorsPath 3>>$LogWarningsPath
-Remove-Item .\ApolloExplorerPC\ApolloExplorer_resource.rc  1>>$LogSuccessPath 2>>$LogErrorsPath 3>>$LogWarningsPath
+if (Test-Path ".\Makefile") {
+    mingw32-make.exe distclean 1>>$LogSuccessPath 2>>$LogErrorsPath 3>>$LogWarningsPath
+}
+Remove-Item -Recurse -Force .\acp\debug\ -ErrorAction SilentlyContinue 1>>$LogSuccessPath 2>>$LogErrorsPath 3>>$LogWarningsPath
+Remove-Item -Recurse -Force .\acp\release\ -ErrorAction SilentlyContinue 1>>$LogSuccessPath 2>>$LogErrorsPath 3>>$LogWarningsPath
+Remove-Item -Recurse -Force .\ApolloExplorerPC\debug\ -ErrorAction SilentlyContinue 1>>$LogSuccessPath 2>>$LogErrorsPath 3>>$LogWarningsPath
+Remove-Item -Recurse -Force .\ApolloExplorerPC\release\ -ErrorAction SilentlyContinue 1>>$LogSuccessPath 2>>$LogErrorsPath 3>>$LogWarningsPath
+Remove-Item -Recurse -Force .\AmigaIconReader\debug\ -ErrorAction SilentlyContinue 1>>$LogSuccessPath 2>>$LogErrorsPath 3>>$LogWarningsPath
+Remove-Item -Recurse -Force .\AmigaIconReader\release\ -ErrorAction SilentlyContinue 1>>$LogSuccessPath 2>>$LogErrorsPath 3>>$LogWarningsPath
+Remove-Item -Recurse -Force .\ApolloExplorer-Windows -ErrorAction SilentlyContinue 1>>$LogSuccessPath 2>>$LogErrorsPath 3>>$LogWarningsPath
+Remove-Item .\ApolloExplorerPC\ApolloExplorer_resource.rc -ErrorAction SilentlyContinue 1>>$LogSuccessPath 2>>$LogErrorsPath 3>>$LogWarningsPath
 
 Write-Host "${Bold}${White}2. Create Windows Project${Grey}${BoldReset}"
 qmake -recursive -config release  1>>$LogSuccessPath 2>>$LogErrorsPath 3>>$LogWarningsPath
@@ -102,13 +144,10 @@ if ($null -ne $ErrorCheck)
 }
 
 Write-Host "${Bold}${White}5. Clean Windows Project${Grey}${BoldReset}"
-mingw32-make.exe distclean 1>>$LogSuccessPath 2>>$LogErrorsPath 3>>$LogWarningsPath
-Remove-Item -Recurse -Force .\acp\debug\ 1>>$LogSuccessPath 2>>$LogErrorsPath 3>>$LogWarningsPath
-Remove-Item -Recurse -Force .\acp\release\ 1>>$LogSuccessPath 2>>$LogErrorsPath 3>>$LogWarningsPath
-Remove-Item -Recurse -Force .\ApolloExplorerPC\debug\ 1>>$LogSuccessPath 2>>$LogErrorsPath 3>>$LogWarningsPath
-Remove-Item -Recurse -Force .\ApolloExplorerPC\release\ 1>>$LogSuccessPath 2>>$LogErrorsPath 3>>$LogWarningsPath
-Remove-Item -Recurse -Force .\AmigaIconReader\debug\ 1>>$LogSuccessPath 2>>$LogErrorsPath 3>>$LogWarningsPath
-Remove-Item -Recurse -Force .\AmigaIconReader\release\ 1>>$LogSuccessPath 2>>$LogErrorsPath 3>>$LogWarningsPath
-Remove-Item .\ApolloExplorerPC\ApolloExplorer_resource.rc  1>>$LogSuccessPath 2>>$LogErrorsPath 3>>$LogWarningsPath  
-
-
+Remove-Item -Recurse -Force .\acp\debug\ -ErrorAction SilentlyContinue 1>>$LogSuccessPath 2>>$LogErrorsPath 3>>$LogWarningsPath
+Remove-Item -Recurse -Force .\acp\release\ -ErrorAction SilentlyContinue 1>>$LogSuccessPath 2>>$LogErrorsPath 3>>$LogWarningsPath
+Remove-Item -Recurse -Force .\ApolloExplorerPC\debug\ -ErrorAction SilentlyContinue 1>>$LogSuccessPath 2>>$LogErrorsPath 3>>$LogWarningsPath
+Remove-Item -Recurse -Force .\ApolloExplorerPC\release\ -ErrorAction SilentlyContinue 1>>$LogSuccessPath 2>>$LogErrorsPath 3>>$LogWarningsPath
+Remove-Item -Recurse -Force .\AmigaIconReader\debug\ -ErrorAction SilentlyContinue 1>>$LogSuccessPath 2>>$LogErrorsPath 3>>$LogWarningsPath
+Remove-Item -Recurse -Force .\AmigaIconReader\release\ -ErrorAction SilentlyContinue 1>>$LogSuccessPath 2>>$LogErrorsPath 3>>$LogWarningsPath
+Remove-Item .\ApolloExplorerPC\ApolloExplorer_resource.rc -ErrorAction SilentlyContinue 1>>$LogSuccessPath 2>>$LogErrorsPath 3>>$LogWarningsPath
