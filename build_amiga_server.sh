@@ -5,6 +5,8 @@ echo ""
 echo -e "\033[1m\033[37m########## \033[31mApollo\033[1;30mExplorer Amiga Server - Release 1.3 \033[37m###########\033[0m\033[36m"
 echo ""
 
+rm  -f log.txt
+
 cd Amiga
 echo -e "\033[1m\033[37m1. Clean House\033[0m"
 make clean >log.txt 2>>log.txt
@@ -13,5 +15,6 @@ make all -j16 >>log.txt 2>>log.txt
 echo ""
 cd ..
 
-
-
+mkdir -p ApolloExplorer-Amiga
+mv Amiga/ApolloExplorerSrv ApolloExplorer-Amiga/ApolloExplorerSrv >>log.txt 2>>log.txt
+mv Amiga/ApolloExplorerTool ApolloExplorer-Amiga/ApolloExplorerTool >>log.txt 2>>log.txt

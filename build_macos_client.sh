@@ -32,9 +32,9 @@ echo -e "\033[1m\033[37m1. Clean House\033[0m"
 rm -r -f .qmake.stash >log.txt 2>>log.txt
 make clean distclean >>log.txt 2>>log.txt
 rm -r -f ApolloExplorer-macOS >>log.txt 2>>log.txt
+rm -r -f ApolloExplorer-macOS.dmg >>log.txt 2>>log.txt
 cd ApolloExplorerPC
 rm -r -f ApolloExplorer.zip >>log.txt 2>>log.txt
-rm -r -f ApolloExplorer.dmg >>log.txt 2>>log.txt
 cd ..
 
 echo -e "\033[1m\033[37m2. Create macOS Project\033[0m\033[30m"
@@ -58,22 +58,28 @@ if [ $? -eq 0 ]; then
     exit 1
 fi
 
+echo -e "\033[1m\033[37m5. Add Icons macOS Project\033[0m"
+mkdir -p ApolloExplorerPC/ApolloExplorer.app/Contents/Resources/
+cp icons/ApolloExplorer.icns ApolloExplorerPC/ApolloExplorer.app/Contents/Resources/
+codesign --force --timestamp --options=runtime --sign ${APPLETEAMID} ApolloExplorerPC/ApolloExplorer.app/Contents/Resources/ApolloExplorer.icns
+
+echo -e "\033[1m\033[37m4. QT Deploy MacOS with static Libs + Hardening + Signing\033[0m"
+macdeployqt ApolloExplorerPC/ApolloExplorer.app -verbose=2 -sign-for-notarization=${APPLETEAMID}
+
 echo ""
 printf '\033[0;30mProceeed with Signing, Notarization and Packaging?\nRequires Apple Developer Team-ID in ${APPLETEAMID}\nChoose No unless you understand the question (y/n)? '
 read answer
 if [ "$answer" != "${answer#[Yy]}" ] ;then 
     cd ApolloExplorerPC
     echo ""
-    echo -e "\033[1m\033[37mA. QT Deploy MacOS with static Libs + Hardening + Signing\033[0m"
-    macdeployqt ApolloExplorer.app -verbose=2 -sign-for-notarization=${APPLETEAMID} >>log.txt 2>>log.txt
-    echo -e "\033[1m\033[37mB. ZIP ApolloExplorer.app Bundle (keep Symlinks intact)\033[0m"
+    echo -e "\033[1m\033[37mA. ZIP ApolloExplorer.app Bundle (keep Symlinks intact)\033[0m"
     zip -r -y ApolloExplorer.zip ApolloExplorer.app >>log.txt 2>>log.txt
-    echo -e "\033[1m\033[37mC. Notarize ApolloExplorer.app Bundle with Apple Developer ID (${APPLETEAMID})\033[0;30m\n"
+    echo -e "\033[1m\033[37mB. Notarize ApolloExplorer.app Bundle with Apple Developer ID (${APPLETEAMID})\033[0;30m\n"
     xcrun notarytool submit ApolloExplorer.zip --keychain-profile "AC_PASSWORD" --wait   
     echo ""
-    echo -e "\033[1m\033[37mD. Staple ApolloExplorer.app Bundle with Notarization Ticket\033[0;30m\n"
+    echo -e "\033[1m\033[37mC. Staple ApolloExplorer.app Bundle with Notarization Ticket\033[0;30m\n"
     xcrun stapler staple ApolloExplorer.app  
-    echo -e "\n\033[1m\033[37mE. Cleanup & Finish\033[0m\n"
+    echo -e "\n\033[1m\033[37mD. Cleanup & Finish\033[0m\n"
     rm -r -f ApolloExplorer.zip
     cd ..
 fi
@@ -87,3 +93,24 @@ mv acp/acp ApolloExplorer-macOS/
 echo -e "\033[1m\033[37m5. Clean macOS Project\033[0m"
 make distclean >>log.txt 2>>log.txt
 echo -e "\033[0m"
+
+printf '\033[0;30mProceeed with creating Apple DMG for distribution? Choose No unless you understand the question (y/n)? '
+read answer
+if [ "$answer" != "${answer#[Yy]}" ] ;then 
+    echo -e "\n\033[1m\033[37m6. Create Apple DMG for distribution (Please Wait ...)\033[0m"
+    brew install create-dmg >>log.txt 2>>log.txt
+    create-dmg >>log.txt 2>>log.txt \
+    --volicon "icons/ApolloExplorer.icns" \
+    --icon "ApolloExplorer.app" 200 140 \
+    --icon "acp" 200 300 \
+    --hide-extension "ApolloExplorer.app" \
+    --app-drop-link 600 220 \
+    --background "images/ApolloExplorer-macOS.png" \
+    --window-size 800 476 \
+    --icon-size 128 \
+    --overwrite \
+    "ApolloExplorer-macOS.dmg" \
+    "ApolloExplorer-macOS"
+fi
+
+echo ""
