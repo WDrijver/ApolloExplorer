@@ -29,7 +29,8 @@ if [ $? -ne 0 ]; then
 fi
 
 echo -e "\033[1m\033[37m1. Clean House\033[0m"
-rm -r -f .qmake.stash >log.txt 2>>log.txt
+rm -f log*.txt
+rm -r -f .qmake.stash >>log.txt 2>>log.txt
 make clean distclean >>log.txt 2>>log.txt
 rm -r -f ApolloExplorer-macOS >>log.txt 2>>log.txt
 rm -r -f ApolloExplorer-macOS.dmg >>log.txt 2>>log.txt
@@ -58,13 +59,13 @@ if [ $? -eq 0 ]; then
     exit 1
 fi
 
-echo -e "\033[1m\033[37m5. Add Icons macOS Project\033[0m"
-mkdir -p ApolloExplorerPC/ApolloExplorer.app/Contents/Resources/
-cp icons/ApolloExplorer.icns ApolloExplorerPC/ApolloExplorer.app/Contents/Resources/
-codesign --force --timestamp --options=runtime --sign ${APPLETEAMID} ApolloExplorerPC/ApolloExplorer.app/Contents/Resources/ApolloExplorer.icns
+echo -e "\033[1m\033[37m4. Add Icons macOS Project\033[0m"
+mkdir -p ApolloExplorerPC/ApolloExplorer.app/Contents/Resources/ >>log.txt 2>>log.txt
+cp icons/ApolloExplorer.icns ApolloExplorerPC/ApolloExplorer.app/Contents/Resources/ >>log.txt 2>>log.txt
+codesign --force --timestamp --options=runtime --sign ${APPLETEAMID} ApolloExplorerPC/ApolloExplorer.app/Contents/Resources/ApolloExplorer.icns >>log.txt 2>>log.txt
 
-echo -e "\033[1m\033[37m4. QT Deploy MacOS with static Libs + Hardening + Signing\033[0m"
-macdeployqt ApolloExplorerPC/ApolloExplorer.app -verbose=2 -sign-for-notarization=${APPLETEAMID}
+echo -e "\033[1m\033[37m5. QT Deploy MacOS with static Libs + Hardening + Signing\033[0m" 
+macdeployqt ApolloExplorerPC/ApolloExplorer.app -verbose=2 -sign-for-notarization=${APPLETEAMID} >>log.txt 2>>log.txt
 
 echo ""
 printf '\033[0;30mProceeed with Signing, Notarization and Packaging?\nRequires Apple Developer Team-ID in ${APPLETEAMID}\nChoose No unless you understand the question (y/n)? '
@@ -82,15 +83,17 @@ if [ "$answer" != "${answer#[Yy]}" ] ;then
     echo -e "\n\033[1m\033[37mD. Cleanup & Finish\033[0m\n"
     rm -r -f ApolloExplorer.zip
     cd ..
+else 
+    echo ""
 fi
 
-echo ""
-echo -e "\033[1m\033[37m4. Install macOS Project\033[0m"
-mkdir -p ApolloExplorer-macOS
-mv ApolloExplorerPC/ApolloExplorer.app ApolloExplorer-macOS/
-mv acp/acp ApolloExplorer-macOS/
+echo -e "\033[1m\033[37m6. Install macOS Project\033[0m"
+mkdir -p ApolloExplorer-macOS >>log.txt 2>>log.txt
+mv ApolloExplorerPC/ApolloExplorer.app ApolloExplorer-macOS/ >>log.txt 2>>log.txt
+mv acp/acp ApolloExplorer-macOS/ >>log.txt 2>>log.txt
 
-echo -e "\033[1m\033[37m5. Clean macOS Project\033[0m"
+echo -e "\033[1m\033[37m7. Clean macOS Project\033[0m"
+rm -r -f .qmake.stash >>log.txt 2>>log.txt
 make distclean >>log.txt 2>>log.txt
 echo -e "\033[0m"
 
