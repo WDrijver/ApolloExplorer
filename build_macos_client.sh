@@ -61,7 +61,7 @@ fi
 
 echo -e "\033[1m\033[37m4. Add Icons macOS Project\033[0m"
 mkdir -p ApolloExplorerPC/ApolloExplorer.app/Contents/Resources/ >>log.txt 2>>log.txt
-cp icons/ApolloExplorer.icns ApolloExplorerPC/ApolloExplorer.app/Contents/Resources/ >>log.txt 2>>log.txt
+cp ApolloExplorerPC/icons/ApolloExplorer.icns ApolloExplorerPC/ApolloExplorer.app/Contents/Resources/ >>log.txt 2>>log.txt
 codesign --force --timestamp --options=runtime --sign ${APPLETEAMID} ApolloExplorerPC/ApolloExplorer.app/Contents/Resources/ApolloExplorer.icns >>log.txt 2>>log.txt
 
 echo -e "\033[1m\033[37m5. QT Deploy MacOS with static Libs + Hardening + Signing\033[0m" 
@@ -103,7 +103,7 @@ if [ "$answer" != "${answer#[Yy]}" ] ;then
     echo -e "\n\033[1m\033[37m6. Create Apple DMG for distribution (Please Wait ...)\033[0m"
     brew install create-dmg >>log.txt 2>>log.txt
     create-dmg >>log.txt 2>>log.txt \
-    --volicon "icons/ApolloExplorer.icns" \
+    --volicon "ApolloExplorerPC/icons/ApolloExplorer.icns" \
     --icon "ApolloExplorer.app" 200 140 \
     --icon "acp" 200 300 \
     --hide-extension "ApolloExplorer.app" \
