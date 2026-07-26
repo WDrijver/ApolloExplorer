@@ -11,6 +11,7 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <sys/filio.h>
+#include <netinet/tcp.h>
 #include <proto/dos.h>
 #include <clib/exec_protos.h>
 //#include <clib/timer_protos.h>
@@ -554,25 +555,36 @@ static void clientThreadBody()
 	ULONG sendBufferSize = 0;
 	ULONG receiveBufferSize = 0;
 	socklen_t varLen = sizeof( sendBufferSize );
-	
-	returnCode = getsockopt( newClientSocket, IPPROTO_TCP, SO_RCVBUF, &receiveBufferSize, &varLen );
-	returnCode = getsockopt( newClientSocket, IPPROTO_TCP, SO_SNDBUF, &sendBufferSize, &varLen );
+
+	returnCode = getsockopt( newClientSocket, SOL_SOCKET, SO_RCVBUF, &receiveBufferSize, &varLen );
+	returnCode = getsockopt( newClientSocket, SOL_SOCKET, SO_SNDBUF, &sendBufferSize, &varLen );
 	dbglog( "[child] Buffer sizes %lu (snd) %lu (rcv)\n", sendBufferSize, receiveBufferSize );
 
-	//Set new buffer sizes (but unaligned with the largest message size to see if it helps the stall)
-	sendBufferSize = 1514*3;
-	receiveBufferSize = 1514*3;
-	returnCode = setsockopt( newClientSocket, IPPROTO_TCP, SO_RCVBUF, &receiveBufferSize, varLen );
-	returnCode = setsockopt( newClientSocket, IPPROTO_TCP, SO_SNDBUF, &sendBufferSize, varLen );
+	//The previous stall workaround shrank these to 1514*3 (~4.5KB), which caps the TCP
+	//window (and therefore throughput ~= window/RTT) far below what a 100Mbit link can
+	//sustain.  The actual stall cause was Nagle/delayed-ACK interaction (see TCP_NODELAY
+	//below), not buffer size, so we can give the socket a generous window instead.
+	sendBufferSize = 65536;
+	receiveBufferSize = 65536;
+	returnCode = setsockopt( newClientSocket, SOL_SOCKET, SO_RCVBUF, &receiveBufferSize, varLen );
+	returnCode = setsockopt( newClientSocket, SOL_SOCKET, SO_SNDBUF, &sendBufferSize, varLen );
 
 	//Check that they took hold
-	returnCode = getsockopt( newClientSocket, IPPROTO_TCP, SO_RCVBUF, &receiveBufferSize, &varLen );
-	returnCode = getsockopt( newClientSocket, IPPROTO_TCP, SO_SNDBUF, &sendBufferSize, &varLen );
+	returnCode = getsockopt( newClientSocket, SOL_SOCKET, SO_RCVBUF, &receiveBufferSize, &varLen );
+	returnCode = getsockopt( newClientSocket, SOL_SOCKET, SO_SNDBUF, &sendBufferSize, &varLen );
 	dbglog( "[child] Adjusted buffer sizes %lu (snd) %lu (rcv)\n", sendBufferSize, receiveBufferSize );
+
+	//Disable Nagle's algorithm.  Without this, small writes (headers, acks, chunk
+	//confirms) sit buffered waiting to coalesce and interact badly with the peer's
+	//delayed ACKs, producing the multi-10ms "stalls" the buffer shrink above was
+	//originally (mis-)diagnosed to fix.
+	static int noDelayYes = 1;
+	returnCode = setsockopt( newClientSocket, IPPROTO_TCP, TCP_NODELAY, &noDelayYes, sizeof( noDelayYes ) );
+	dbglog( "[child] TCP_NODELAY setsockopt returned %ld\n", returnCode );
 
 	//Enable the keep alive so that crashed clients won't keep the client thread alive
 	static int keepAliveYes = 1;
-	returnCode = setsockopt( newClientSocket, IPPROTO_TCP, SO_KEEPALIVE, &keepAliveYes, sizeof( keepAliveYes ) );	//This doesn't work!!!!
+	returnCode = setsockopt( newClientSocket, SOL_SOCKET, SO_KEEPALIVE, &keepAliveYes, sizeof( keepAliveYes ) );
 
 
 	//Let's reserve some memory for each of the messages
@@ -979,19 +991,22 @@ static void clientThreadBody()
 						goto exit_child;
 					}
 
-					//Let's give the client some time to send the next chunk, else we make a timeout
-					LONG bytesAvailable = 0;
-					LONG retryCount = 50;
-					IoctlSocket( newClientSocket, FIONREAD ,&bytesAvailable );
-					while( bytesAvailable < sizeof( ProtocolMessage_t ) && retryCount-- > 0 )
-					{
-						dbglog( "[child] Waiting on client to send bytes...... (waiting %ld)\r", retryCount );
-						Delay( 2 );
-						IoctlSocket( newClientSocket, FIONREAD ,&bytesAvailable );
-					}
+					//Let's give the client some time to send the next chunk, else we make a timeout.
+					//This blocks on WaitSelect() until data actually arrives (or the timeout
+					//expires) instead of polling FIONREAD with a Delay(2) (40ms) between checks.
+					//That polling granularity taxed every single chunk boundary - with a 5 chunk
+					//(160KB) in-flight window, 160KB/40ms is ~4MB/s, which was exactly the
+					//throughput ceiling being seen - independent of any TCP-level tuning.
+					fd_set waitFdSet;
+					FD_ZERO( &waitFdSet );
+					FD_SET( newClientSocket, &waitFdSet );
+					struct timeval selectTimeout;
+					selectTimeout.tv_sec = 2;	//2s stall timeout, matches the previous 50*Delay(2) budget
+					selectTimeout.tv_usec = 0;
+					int waitResult = WaitSelect( newClientSocket + 1, &waitFdSet, NULL, NULL, &selectTimeout, NULL );
 
-					//Are there some bytes here now?
-					if( bytesAvailable < sizeof( ProtocolMessage_t ) )
+					//Did we time out waiting for the client?
+					if( waitResult <= 0 )
 					{
 						//So a timeout occurred.  Close the connection and cleanup
 						dbglog( "[child] There was a timeout on recieving file chunks from the client.  Terminating the conection.\n" );

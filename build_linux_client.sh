@@ -2,7 +2,7 @@
 
 printf '\33c\e[3J'
 echo ""
-echo -e "\033[1m\033[37m########## \033[31mApollo\033[1;30mExplorer Linux Client - Release 1.3 \033[37m###########\033[0m\033[36m"
+echo -e "\033[1m\033[37m########## \033[31mApollo\033[1;30mExplorer Linux Client - Release 1.4 \033[37m###########\033[0m\033[36m"
 echo ""
 
 echo -e "\033[1m\033[37m0. Checking Prerequisites\033[0m"

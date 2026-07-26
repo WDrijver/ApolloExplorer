@@ -12,7 +12,7 @@ $Grey       = "$([char]27)[30m"
 
 Clear-Host
 Write-Host ""
-Write-Host "${Bold}${White}########## ${Red}Apollo${Grey}Explorer Windows Client - Release 1.3 ${White}###########"
+Write-Host "${Bold}${White}########## ${Red}Apollo${Grey}Explorer Windows Client - Release 1.4 ${White}###########"
 Write-Host ""
 Write-Host "${Bold}${White}0. Checking Prerequisites${Grey}${BoldReset}"
 
