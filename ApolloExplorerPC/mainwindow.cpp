@@ -194,7 +194,7 @@ MainWindow::MainWindow( QSharedPointer<QSettings> settings, QSharedPointer<Amiga
     //Connect actions - Note this has to happen after the views are setup else a crash happens
     connect( ui->actionDelete, &QAction::triggered, this, &MainWindow::onDeleteSlot );
     connect( ui->actionAbout, &QAction::triggered, this, &MainWindow::onAboutSlot );
-    connect( ui->actionWhats_New, &QAction::triggered, [&]( bool triggered ){ m_DialogWhatsNew.show(); } );
+    //connect( ui->actionWhats_New, &QAction::triggered, [&]( bool triggered ){ m_DialogWhatsNew.show(); } );
     connect( ui->actionReboot_Amiga, &QAction::triggered, this, &MainWindow::onRebootSlot );
     connect( ui->actionCreate_Directory, &QAction::triggered, this, &MainWindow::onMkdirSlot );
     connect( ui->actionShow_Drives, &QAction::toggled, this, &MainWindow::onShowDrivesToggledSlot );
