@@ -6,6 +6,7 @@
 #include <clib/exec_protos.h>
 #include <clib/wb_protos.h>
 #include <sys/ioctl.h>
+#include <errno.h>
 
 #include "protocolTypes.h"
 #include "protocol.h"
@@ -15,7 +16,7 @@
 #include "AEDiscoveryThread.h"
 #include "wbicon.h"
 
-UBYTE *ver = "\0$VER: ApolloExplorerSrv " VERSION_STRING " (13.10.2026)";
+UBYTE *ver = "\0$VER: ApolloExplorerSrv " VERSION_STRING " (12.11.2026)";
 
 struct Library *SocketBase = NULL;
 
@@ -194,12 +195,8 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-	//We need to be able to check both the network socket and message port for incoming messages
-	//So we need to setup WaitSelect();
-	fd_set networkReadSet __attribute__((aligned(4)));
-	struct timeval timeOut __attribute__((aligned(4))) = { .tv_sec = 1, .tv_usec = 0};	//1s
-	FD_ZERO( &networkReadSet );
-	FD_SET( serverSocket, &networkReadSet );
+	//The main loop polls the (non-blocking) server socket with accept() and the message port,
+	//with Delay() in between - see the loop below for why there is no WaitSelect() here.
 
 	//Create a message port so we can send the socket handles to child processes
 	dbglog( "[master] Creating message port %s.\n", g_MessagePortName );
@@ -282,29 +279,25 @@ int main(int argc, char *argv[])
 			break;
 		}
 
-		//dbglog("Awaiting new connection\n");
-		FD_ZERO( &networkReadSet );
-		FD_SET( serverSocket, &networkReadSet );
-
-		//Wait on the network first
-		int waitRC = WaitSelect( serverSocket+1,&networkReadSet, NULL, NULL, &timeOut, NULL );
-
-		if( waitRC > 0 )
+		//Any new client connection?  The server socket is non-blocking, so accept() returns at
+		//once (EWOULDBLOCK when nobody is waiting).  No WaitSelect() here on purpose: under
+		//UAE/Amiberry a bsdsocket call that is still in progress when the Amiga is reset
+		//deadlocks the emulator (grey screen), and the server would sit in WaitSelect() nearly
+		//all the time.  The waiting is done by Delay() above instead.
+		socklen_t addrLen __attribute__((aligned(4))) = sizeof( addr );
+		SOCKET newClientSocket = (SOCKET)accept(serverSocket, (struct sockaddr *)&addr, &addrLen);
+		if( newClientSocket >= 0 )
 		{
-			//Any new client connection?
-			socklen_t addrLen __attribute__((aligned(4))) = sizeof( addr );
-			SOCKET newClientSocket = (SOCKET)accept(serverSocket, (struct sockaddr *)&addr, &addrLen);
-			if( newClientSocket < 0 )
-			{
-				dbglog( "accept error %d \"%s\"\n", errno, strerror( errno ) );
-				continue;
-			}else
-			{
-				//Now spawn a client thread
-				dbglog( "[master] Starting client thread for new socket 0x%08x\n", newClientSocket );
-				startClientThread( SocketBase, g_AEServerMessagePort, newClientSocket );
-				dbglog( "[master] New client connection.\n" );
-			}
+			//Now spawn a client thread
+			dbglog( "[master] Starting client thread for new socket 0x%08x\n", newClientSocket );
+			startClientThread( SocketBase, g_AEServerMessagePort, newClientSocket );
+			dbglog( "[master] New client connection.\n" );
+		}else
+		{
+			//errno is not linked to bsdsocket.library here: ask the library itself
+			LONG acceptError = Errno();
+			if( acceptError != EWOULDBLOCK && acceptError != EAGAIN )
+				dbglog( "accept error %ld\n", (long)acceptError );
 		}
 
 
