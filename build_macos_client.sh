@@ -53,19 +53,31 @@ echo ""
 echo -e "\033[1m\033[37m3. Make macOS Project\033[0m"
 make -j16 >>log.txt 2>>log.txt
 
-grep -i "error" log.txt
+grep -E "error:|Error [0-9]+" log.txt
 if [ $? -eq 0 ]; then
-    echo -e "\033[1m\033[Error(s) found, check log.txt\033[0m"
+    echo -e "\033[1m\033[31mError(s) found, check log.txt\033[0m"
     exit 1
 fi
 
 echo -e "\033[1m\033[37m4. Add Icons macOS Project\033[0m"
 mkdir -p ApolloExplorerPC/ApolloExplorer.app/Contents/Resources/ >>log.txt 2>>log.txt
 cp ApolloExplorerPC/icons/ApolloExplorer.icns ApolloExplorerPC/ApolloExplorer.app/Contents/Resources/ >>log.txt 2>>log.txt
-codesign --force --timestamp --options=runtime --sign ${APPLETEAMID} ApolloExplorerPC/ApolloExplorer.app/Contents/Resources/ApolloExplorer.icns >>log.txt 2>>log.txt
+echo -e "\033[1m\033[37m5. QT Deploy MacOS with static Libs + Hardening + Signing\033[0m"
+if [ -n "${APPLETEAMID}" ]; then
+    macdeployqt ApolloExplorerPC/ApolloExplorer.app -verbose=2 -sign-for-notarization="${APPLETEAMID}" >>log.txt 2>>log.txt
+else
+    # No Developer ID: macdeployqt rewrites the bundled libraries, which invalidates
+    # their signatures. Apple Silicon refuses to load unsigned code, so ad-hoc sign.
+    echo -e "\033[0;33m   No \${APPLETEAMID} set: using ad-hoc signature (local use only)\033[0m"
+    macdeployqt ApolloExplorerPC/ApolloExplorer.app -verbose=2 >>log.txt 2>>log.txt
+    codesign --force --deep --sign - ApolloExplorerPC/ApolloExplorer.app >>log.txt 2>>log.txt
+fi
 
-echo -e "\033[1m\033[37m5. QT Deploy MacOS with static Libs + Hardening + Signing\033[0m" 
-macdeployqt ApolloExplorerPC/ApolloExplorer.app -verbose=2 -sign-for-notarization=${APPLETEAMID} >>log.txt 2>>log.txt
+codesign --verify --deep --strict ApolloExplorerPC/ApolloExplorer.app >>log.txt 2>>log.txt
+if [ $? -ne 0 ]; then
+    echo -e "\033[1m\033[31mCode signature verification failed, check log.txt\033[0m"
+    exit 1
+fi
 
 echo ""
 printf '\033[0;30mProceeed with Signing, Notarization and Packaging?\nRequires Apple Developer Team-ID in ${APPLETEAMID}\nChoose No unless you understand the question (y/n)? '
