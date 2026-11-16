@@ -53,10 +53,6 @@ If you also want to use the ACP or ASH command line tools, continue:
 4. Open a Terminal window
 5. Install HomeBrew: `/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"`
 6. Install QT6: `brew install qt`
-7. Type `sudo install_name_tool -add_rpath /opt/homebrew/lib /usr/local/bin/acp`
-8. Type `sudo codesign --force --sign - /usr/local/bin/acp`
-9. Type `sudo install_name_tool -add_rpath /opt/homebrew/lib /usr/local/bin/ash`
-10. Type `sudo codesign --force --sign - /usr/local/bin/ash`
 
 After installation you will find the ApolloExplorer Client for macOS in the Application folder.
 ACP and ASH command line tools are installed in the `usr/local/bin` system folder.
