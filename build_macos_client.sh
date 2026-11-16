@@ -1,8 +1,11 @@
 #!/bin/bash
 
+#The version comes from VERSION_STRING in protocolTypes.h, so it never goes stale here
+VERSION="$(sed -n 's/^#define VERSION_STRING "\(.*\)"/\1/p' "$(dirname "$0")/protocolTypes.h")"
+
 printf '\33c\e[3J'
 echo ""
-echo -e "\033[1m\033[37m########## \033[31mApollo\033[1;30mExplorer MacOS Client - Release 1.4.2 \033[37m###########\033[0m\033[36m"
+echo -e "\033[1m\033[37m########## \033[31mApollo\033[1;30mExplorer MacOS Client - Release ${VERSION} \033[37m###########\033[0m\033[36m"
 echo ""
 
 echo -e "\033[1m\033[37m0. Checking Prerequisites\033[0;30m"
@@ -82,7 +85,9 @@ fi
 echo ""
 printf '\033[0;30mProceeed with Signing, Notarization and Packaging?\nRequires Apple Developer Team-ID in ${APPLETEAMID}\nChoose No unless you understand the question (y/n)? '
 read answer
+NOTARIZE=0
 if [ "$answer" != "${answer#[Yy]}" ] ;then 
+    NOTARIZE=1
     cd ApolloExplorerPC
     echo ""
     echo -e "\033[1m\033[37mA. ZIP ApolloExplorer.app Bundle (keep Symlinks intact)\033[0m"
@@ -102,8 +107,61 @@ fi
 echo -e "\033[1m\033[37m6. Install macOS Project\033[0m"
 mkdir -p ApolloExplorer-macOS >>log.txt 2>>log.txt
 mv ApolloExplorerPC/ApolloExplorer.app ApolloExplorer-macOS/ >>log.txt 2>>log.txt
-mv acp/acp ApolloExplorer-macOS/ >>log.txt 2>>log.txt
-mv ash/ash ApolloExplorer-macOS/ >>log.txt 2>>log.txt
+cp acp/acp ApolloExplorer-macOS/ >>log.txt 2>>log.txt
+cp ash/ash ApolloExplorer-macOS/ >>log.txt 2>>log.txt
+
+# Sign acp/ash with Developer ID + hardened runtime (required for notarizing the .pkg)
+APP_IDENTITY=""
+if [ -n "${APPLETEAMID}" ]; then
+    APP_IDENTITY="$(security find-identity -v -p codesigning 2>/dev/null | sed -n "s/.*\"\(Developer ID Application: .*(${APPLETEAMID})\)\"/\1/p" | head -1)"
+    if [ -n "${APP_IDENTITY}" ]; then
+        echo -e "\033[1m\033[37m   Signing acp and ash (${APP_IDENTITY})\033[0m"
+        codesign --force --options runtime --timestamp \
+            --entitlements packaging/macos/cli.entitlements \
+            --sign "${APP_IDENTITY}" \
+            ApolloExplorer-macOS/acp ApolloExplorer-macOS/ash >>log.txt 2>>log.txt
+        if [ $? -ne 0 ]; then
+            echo -e "\033[1m\033[31m   Signing acp/ash failed, check log.txt\033[0m"
+            APP_IDENTITY=""
+        fi
+    else
+        echo -e "\033[0;33m   No Developer ID Application certificate for ${APPLETEAMID}: acp/ash left unsigned\033[0m"
+    fi
+fi
+
+echo -e "\033[1m\033[37m6b. Create macOS Installer Package (.pkg)\033[0m"
+if [ -z "${APPLE_INSTALLER_IDENTITY}" ]; then
+    # Use a "Developer ID Installer" certificate from the keychain if one is installed
+    APPLE_INSTALLER_IDENTITY="$(security find-identity -v 2>/dev/null | sed -n "s/.*\"\(Developer ID Installer: .*(${APPLETEAMID})\)\"/\1/p" | head -1)"
+    export APPLE_INSTALLER_IDENTITY
+fi
+if [ -z "${APPLE_INSTALLER_IDENTITY}" ]; then
+    echo -e "\033[0;33m   No Developer ID Installer certificate found: package will be unsigned\033[0m"
+fi
+packaging/macos/build-pkg.sh --prebuilt ApolloExplorer-macOS >>log.txt 2>>log.txt
+if [ $? -ne 0 ]; then
+    echo -e "\033[1m\033[31m   Package build failed, check log.txt\033[0m"
+else
+    PKG_FILE="$(ls packaging/macos/dist/*.pkg | head -1)"
+    echo -e "   ${PKG_FILE}"
+
+    if [ "${NOTARIZE}" -eq 1 ]; then
+        if [ -z "${APPLE_INSTALLER_IDENTITY}" ] || [ -z "${APP_IDENTITY}" ]; then
+            echo -e "\033[0;33m   Skipping .pkg notarization: needs a signed package and signed acp/ash\033[0m"
+        else
+            echo -e "\033[1m\033[37m   Notarize .pkg with Apple Developer ID (${APPLETEAMID})\033[0;30m\n"
+            xcrun notarytool submit "${PKG_FILE}" --keychain-profile "AC_PASSWORD" --wait 2>&1 | tee -a log.txt | tee notarize-pkg.txt
+            if grep -q "status: Accepted" notarize-pkg.txt; then
+                echo ""
+                echo -e "\033[1m\033[37m   Staple .pkg with Notarization Ticket\033[0;30m\n"
+                xcrun stapler staple "${PKG_FILE}"
+            else
+                echo -e "\033[1m\033[31m   .pkg notarization failed. Details: xcrun notarytool log <submission id> --keychain-profile AC_PASSWORD\033[0m"
+            fi
+            rm -f notarize-pkg.txt
+        fi
+    fi
+fi
 
 echo -e "\033[1m\033[37m7. Clean macOS Project\033[0m"
 rm -r -f .qmake.stash >>log.txt 2>>log.txt

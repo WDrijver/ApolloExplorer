@@ -1,8 +1,11 @@
 #!/bin/bash
 
+#The version comes from VERSION_STRING in protocolTypes.h, so it never goes stale here
+VERSION="$(sed -n 's/^#define VERSION_STRING "\(.*\)"/\1/p' "$(dirname "$0")/protocolTypes.h")"
+
 printf '\33c\e[3J'
 echo ""
-echo -e "\033[1m\033[37m########## \033[31mApollo\033[1;30mExplorer Amiga Server - Release 1.4.2 \033[37m###########\033[0m\033[36m"
+echo -e "\033[1m\033[37m########## \033[31mApollo\033[1;30mExplorer Amiga Server - Release ${VERSION} \033[37m###########\033[0m\033[36m"
 echo ""
 
 rm  -f log.txt

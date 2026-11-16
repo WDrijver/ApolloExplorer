@@ -43,6 +43,15 @@ SOURCES += \
         protocolhandler.cpp \
         uploadthread.cpp
 
+# macOS: acp/ash are plain executables (no bundled Qt), so look for the Qt frameworks
+# in the standard Homebrew locations (Apple Silicon, then Intel). Removes the need for
+# users to run install_name_tool -add_rpath + re-sign after installing.
+macx {
+    for(dir, $$list(/opt/homebrew/lib /usr/local/lib)) {
+        !equals(dir, $$[QT_INSTALL_LIBS]): QMAKE_RPATHDIR += $$dir
+    }
+}
+
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin
 else: unix:!android: target.path = /opt/$${TARGET}/bin

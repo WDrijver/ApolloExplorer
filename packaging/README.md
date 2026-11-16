@@ -74,6 +74,10 @@ it together with `acp` and `ash` into a `.pkg` under `packaging/macos/dist/`
 using `pkgbuild`. `ApolloExplorer.app` is installed to `/Applications`; `acp`
 and `ash` to `/usr/local/bin`.
 
+`build_macos_client.sh` runs this script automatically with
+`--prebuilt ApolloExplorer-macOS`, which skips the build and packages the
+(signed/notarized) app and `acp`/`ash` it already produced.
+
 To sign the package, export `APPLE_INSTALLER_IDENTITY` with a
 "Developer ID Installer" certificate name before running the script.
 

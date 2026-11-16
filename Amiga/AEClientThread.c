@@ -10,7 +10,9 @@
 #ifdef __GNUC__
 #include <stdio.h>
 #include <unistd.h>
+#include <errno.h>
 #include <sys/filio.h>
+#include <sys/time.h>
 #include <netinet/tcp.h>
 #include <proto/dos.h>
 #include <clib/exec_protos.h>
@@ -382,6 +384,25 @@ static void clientThread()
 	Forbid(); g_ActiveThreadCount--; Permit();
 }
 
+//Has the client closed the connection?  Only call this when FIONREAD reported 0 bytes:
+//an idle and a closed connection both look like that.  A non-blocking recv(MSG_PEEK)
+//tells them apart (0 = closed, EWOULDBLOCK = idle) without WaitSelect(), which the
+//server avoids on purpose (see the master loop).
+static BOOL clientHasClosed( struct Library *SocketBase, SOCKET clientSocket )
+{
+	char probe;
+	LONG nonBlocking = 1;
+	IoctlSocket( clientSocket, FIONBIO, &nonBlocking );
+	LONG received = recv( clientSocket, &probe, 1, MSG_PEEK );
+	LONG error = ( received < 0 ) ? Errno() : 0;
+	nonBlocking = 0;
+	IoctlSocket( clientSocket, FIONBIO, &nonBlocking );
+
+	if( received == 0 ) return TRUE;
+	if( received < 0 && error != EWOULDBLOCK && error != EAGAIN ) return TRUE;
+	return FALSE;
+}
+
 static void clientThreadBody()
 {
 	dbglog( "[child] Client thread started.\n" );
@@ -399,6 +420,10 @@ static void clientThreadBody()
 	FileReceiveContext_t *fileReceiveContext = NULL;
 	DeleteContext_t *deleteContext = NULL;
 	BPTR cdLock = 0;		//Current directory lock for this shell session (0 = use task default)
+	//The directory DOS gave this process.  DOS unlocks pr_CurrentDir when the process
+	//ends, so it must be the current directory again before cdLock is unlocked;
+	//otherwise cdLock was unlocked twice and the original lock leaked.
+	BPTR originalDir = ((struct Process *)FindTask( NULL ))->pr_CurrentDir;
 
 	//saftey check for the port number
 	if( g_NextClientPort > 50000 ) g_NextClientPort = 40000;
@@ -607,6 +632,31 @@ static void clientThreadBody()
 	returnCode = setsockopt( newClientSocket, IPPROTO_TCP, TCP_NODELAY, &noDelayYes, sizeof( noDelayYes ) );
 	dbglog( "[child] TCP_NODELAY setsockopt returned %ld\n", returnCode );
 
+	//Keep every TCP segment we send well below a full Ethernet frame.  A V4 under
+	//ApolloOS R9.6 was measured to lose every IP packet it sends that is larger than
+	//1498 bytes (1500 never arrives, 1498 does), while it receives 1500-byte packets
+	//fine.  With the negotiated MSS of 1460, every reply over ~1.4 KB - all ash output,
+	//downloads, larger directory lists - vanished and the connection stalled.  1400
+	//leaves room for TCP options.  AROSTCP only allows TCP_MAXSEG to LOWER the MSS the
+	//connection negotiated (tcp_usrreq.c), so it must be set here on the accepted
+	//socket: on the listen socket it is still the 512 byte default and 1400 is refused.
+	static int maxSegmentSize = 1400;
+	returnCode = setsockopt( newClientSocket, IPPROTO_TCP, TCP_MAXSEG, &maxSegmentSize, sizeof( maxSegmentSize ) );
+	dbglog( "[child] TCP_MAXSEG %d setsockopt returned %ld\n", maxSegmentSize, returnCode );
+
+	//Bound every blocking recv() and send().  getMessage() now waits for a message that
+	//arrives in pieces instead of giving up, so it needs a limit for a client that stops
+	//halfway; and a send to a client that no longer reads must not block this thread for
+	//good.  When either expires, the connection is closed.
+	struct timeval socketTimeout;
+	socketTimeout.tv_sec = 10;
+	socketTimeout.tv_usec = 0;
+	returnCode = setsockopt( newClientSocket, SOL_SOCKET, SO_RCVTIMEO, &socketTimeout, sizeof( socketTimeout ) );
+	dbglog( "[child] SO_RCVTIMEO setsockopt returned %ld\n", returnCode );
+	socketTimeout.tv_sec = 30;
+	returnCode = setsockopt( newClientSocket, SOL_SOCKET, SO_SNDTIMEO, &socketTimeout, sizeof( socketTimeout ) );
+	dbglog( "[child] SO_SNDTIMEO setsockopt returned %ld\n", returnCode );
+
 	//Enable the keep alive so that crashed clients won't keep the client thread alive
 	static int keepAliveYes = 1;
 	returnCode = setsockopt( newClientSocket, SOL_SOCKET, SO_KEEPALIVE, &keepAliveYes, sizeof( keepAliveYes ) );
@@ -671,6 +721,17 @@ static void clientThreadBody()
 					dbglog( "[child] Staring the shutdown.\n" );
 					goto exit_child;
 				}
+			}
+
+			//End the thread as soon as the client has gone.  Before, a finished acp/ash
+			//call left its thread (with socket and ~100 KB of buffers) running until the
+			//second inactivity ping failed, about 60 s later, and a burst of short calls
+			//piled up dozens of them.
+			if( clientHasClosed( SocketBase, newClientSocket ) )
+			{
+				dbglog( "[child] Client closed the connection.\n" );
+				keepThisConnectionRunning = 0;
+				continue;
 			}
 
 			//Check if we have reached the inactivity limit
@@ -1305,9 +1366,11 @@ static void clientThreadBody()
 							}
 							if( isDir )
 							{
+								//Make the new lock current BEFORE unlocking the old one,
+								//which is the current directory at this point.
+								CurrentDir( newLock );
 								if( cdLock != 0 ) UnLock( cdLock );
 								cdLock = newLock;
-								CurrentDir( cdLock );
 								shellReturnCode = 0;
 							}
 							else
@@ -1376,9 +1439,9 @@ static void clientThreadBody()
 							}
 							if( isDir )
 							{
+								CurrentDir( tryLock );		//Before unlocking the current one
 								if( cdLock != 0 ) UnLock( cdLock );
 								cdLock = tryLock;
-								CurrentDir( cdLock );
 								shellReturnCode = 0;
 							}
 							else
@@ -1407,12 +1470,25 @@ static void clientThreadBody()
 						if( outFH != 0 )
 						{
 							struct TagItem sysTags[] = {
-								{ SYS_Input,  (ULONG)nilFH  },
-								{ SYS_Output, (ULONG)outFH  },
-								{ SYS_Asynch, FALSE         },
-								{ TAG_DONE,   0             }
+								{ SYS_Input,    (ULONG)nilFH  },
+								{ SYS_Output,   (ULONG)outFH  },
+								{ SYS_Asynch,   FALSE         },
+								{ NP_StackSize, 65536         },
+								{ TAG_DONE,     0             }
 							};
+
+							//Run the command at priority 0, like a normal Shell.  This thread
+							//runs at 8, above the TCP/IP stack, and the command process gets
+							//the caller's priority: a busy command (List ALL) starved the stack
+							//and stalled every connection.  NP_Priority in sysTags does not
+							//help: ApolloOS's SystemTagList puts the caller's priority in front
+							//of our tags and CreateNewProc takes the first one it finds
+							//(rom/dos/systemtaglist.c, createnewproc.c).  So lower this thread
+							//while it waits for the command; NP_StackSize does get through.
+							struct Task *thisTask = FindTask( NULL );
+							BYTE threadPriority = SetTaskPri( thisTask, 0 );
 							shellReturnCode = SystemTagList( shellCommand, sysTags );
+							SetTaskPri( thisTask, threadPriority );
 							Close( outFH );
 						}
 						if( nilFH != 0 ) { Close( nilFH ); }
@@ -1659,7 +1735,9 @@ exit_child: ;
 	dbglog( "[child] Deleting message port.\n" );
 	DeleteMsgPort( replyPort );
 
-	//Release the current-directory lock held by this shell session
+	//Give DOS its own current directory back first (it unlocks that one when the
+	//process ends), then release the lock this shell session was using.
+	CurrentDir( originalDir );
 	if( cdLock != 0 ) { UnLock( cdLock ); cdLock = 0; }
 
 	//Free our messagebuffer
