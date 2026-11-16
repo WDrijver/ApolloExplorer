@@ -1,5 +1,9 @@
 IMPORTANT:Make sure you update the server binary on your Amiga BEFORE you use the new client.   All sorts of a interesting things might happen if you don't.
 
+Updates in Version 1.4.4
+Bug fixes for the Amiga server
+ - ash output, downloads and larger directory listings no longer stall on a V4 that cannot send full-size network packets.  The server now keeps its TCP segments at 1400 bytes (was 1460).
+
 Updates in Version 1.4.2
 Bug fixes for the Amiga server
  - Fixed the "Memory header not located" alert (Task AEClientThread) under load, such as uploading many files or a recursive acp download.  Several clients connected at the same time shared the buffers and file handles of directory listings, volume lists, uploads and deletes; each connection now has its own.

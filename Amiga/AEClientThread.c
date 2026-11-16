@@ -607,6 +607,18 @@ static void clientThreadBody()
 	returnCode = setsockopt( newClientSocket, IPPROTO_TCP, TCP_NODELAY, &noDelayYes, sizeof( noDelayYes ) );
 	dbglog( "[child] TCP_NODELAY setsockopt returned %ld\n", returnCode );
 
+	//Keep every TCP segment we send well below a full Ethernet frame.  A V4 under
+	//ApolloOS R9.6 was measured to lose every IP packet it sends that is larger than
+	//1498 bytes (1500 never arrives, 1498 does), while it receives 1500-byte packets
+	//fine.  With the negotiated MSS of 1460, every reply over ~1.4 KB - all ash output,
+	//downloads, larger directory lists - vanished and the connection stalled.  1400
+	//leaves room for TCP options.  AROSTCP only allows TCP_MAXSEG to LOWER the MSS the
+	//connection negotiated (tcp_usrreq.c), so it must be set here on the accepted
+	//socket: on the listen socket it is still the 512 byte default and 1400 is refused.
+	static int maxSegmentSize = 1400;
+	returnCode = setsockopt( newClientSocket, IPPROTO_TCP, TCP_MAXSEG, &maxSegmentSize, sizeof( maxSegmentSize ) );
+	dbglog( "[child] TCP_MAXSEG %d setsockopt returned %ld\n", maxSegmentSize, returnCode );
+
 	//Enable the keep alive so that crashed clients won't keep the client thread alive
 	static int keepAliveYes = 1;
 	returnCode = setsockopt( newClientSocket, SOL_SOCKET, SO_KEEPALIVE, &keepAliveYes, sizeof( keepAliveYes ) );
