@@ -2,10 +2,14 @@
 #
 # Build a native macOS .pkg installer for ApolloExplorer.
 #
-# Usage: packaging/macos/build-pkg.sh [version]
+# Usage: packaging/macos/build-pkg.sh [--prebuilt <dir>] [version]
 #
 # If [version] is omitted, it is extracted from VERSION_STRING in
 # protocolTypes.h at the repository root.
+#
+# --prebuilt <dir>: skip the build and package an existing ApolloExplorer.app,
+# acp and ash from <dir> (used by build_macos_client.sh so the package holds
+# the signed/notarized app instead of rebuilding it).
 #
 # Optional signing: export APPLE_INSTALLER_IDENTITY="Developer ID Installer: ..."
 # to have the resulting package signed with productsign. Without it an
@@ -21,9 +25,22 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 VERSION_HEADER="$REPO_ROOT/protocolTypes.h"
 
-if [ -n "${1:-}" ]; then
-    VERSION="$1"
-else
+PREBUILT_DIR=""
+VERSION=""
+while [ $# -gt 0 ]; do
+    case "$1" in
+        --prebuilt)
+            PREBUILT_DIR="$(cd "${2:?--prebuilt needs a directory}" && pwd)"
+            shift 2
+            ;;
+        *)
+            VERSION="$1"
+            shift
+            ;;
+    esac
+done
+
+if [ -z "$VERSION" ]; then
     VERSION="$(sed -n 's/^#define VERSION_STRING "\(.*\)"/\1/p' "$VERSION_HEADER")"
     if [ -z "$VERSION" ]; then
         echo "ERROR: could not extract VERSION_STRING from $VERSION_HEADER" >&2
@@ -36,6 +53,11 @@ DIST_DIR="$SCRIPT_DIR/dist"
 APP_BUNDLE="$REPO_ROOT/ApolloExplorerPC/ApolloExplorer.app"
 ACP_BIN="$REPO_ROOT/acp/acp"
 ASH_BIN="$REPO_ROOT/ash/ash"
+if [ -n "$PREBUILT_DIR" ]; then
+    APP_BUNDLE="$PREBUILT_DIR/ApolloExplorer.app"
+    ACP_BIN="$PREBUILT_DIR/acp"
+    ASH_BIN="$PREBUILT_DIR/ash"
+fi
 
 echo "########## ApolloExplorer .pkg builder (version ${VERSION}) ##########"
 
@@ -45,21 +67,25 @@ if ! sw_vers | grep -q "macOS"; then
     exit 1
 fi
 
-if ! command -v qmake >/dev/null 2>&1; then
+if [ -z "$PREBUILT_DIR" ] && ! command -v qmake >/dev/null 2>&1; then
     echo "ERROR: qmake not found on PATH. Install Qt 6 (homebrew: brew install qt@6) and try again." >&2
     exit 1
 fi
 
 echo "==> 1. Clean previous build output"
 rm -rf "$STAGE_DIR" "$DIST_DIR"
-( cd "$REPO_ROOT" && make distclean >/dev/null 2>&1 || true )
-rm -rf "$APP_BUNDLE"
+if [ -z "$PREBUILT_DIR" ]; then
+    ( cd "$REPO_ROOT" && make distclean >/dev/null 2>&1 || true )
+    rm -rf "$APP_BUNDLE"
 
-echo "==> 2. Configuring project (qmake)"
-( cd "$REPO_ROOT" && qmake -recursive MACOSX_DEPLOYMENT_TARGET="12.7.6" )
+    echo "==> 2. Configuring project (qmake)"
+    ( cd "$REPO_ROOT" && qmake -recursive MACOSX_DEPLOYMENT_TARGET="12.7.6" )
 
-echo "==> 3. Building (make)"
-( cd "$REPO_ROOT" && make -j"$(sysctl -n hw.ncpu)" )
+    echo "==> 3. Building (make)"
+    ( cd "$REPO_ROOT" && make -j"$(sysctl -n hw.ncpu)" )
+else
+    echo "==> 2./3. Skipped: using prebuilt files from $PREBUILT_DIR"
+fi
 
 if [ ! -d "$APP_BUNDLE" ]; then
     echo "ERROR: expected app bundle missing: $APP_BUNDLE" >&2
@@ -74,12 +100,14 @@ if [ ! -x "$ASH_BIN" ]; then
     exit 1
 fi
 
-echo "==> 4. Adding application icon"
-mkdir -p "$APP_BUNDLE/Contents/Resources/"
-cp "$REPO_ROOT/ApolloExplorerPC/icons/ApolloExplorer.icns" "$APP_BUNDLE/Contents/Resources/"
+if [ -z "$PREBUILT_DIR" ]; then
+    echo "==> 4. Adding application icon"
+    mkdir -p "$APP_BUNDLE/Contents/Resources/"
+    cp "$REPO_ROOT/ApolloExplorerPC/icons/ApolloExplorer.icns" "$APP_BUNDLE/Contents/Resources/"
 
-echo "==> 5. Bundling Qt frameworks (macdeployqt)"
-macdeployqt "$APP_BUNDLE" -verbose=1
+    echo "==> 5. Bundling Qt frameworks (macdeployqt)"
+    macdeployqt "$APP_BUNDLE" -verbose=1
+fi
 
 echo "==> 6. Staging package root"
 mkdir -p "$STAGE_DIR/Applications"
@@ -108,7 +136,9 @@ fi
 
 echo "==> 9. Cleanup"
 rm -rf "$STAGE_DIR"
-( cd "$REPO_ROOT" && make distclean >/dev/null 2>&1 || true )
+if [ -z "$PREBUILT_DIR" ]; then
+    ( cd "$REPO_ROOT" && make distclean >/dev/null 2>&1 || true )
+fi
 
 echo ""
 echo "Done: $PKG_FILE"
