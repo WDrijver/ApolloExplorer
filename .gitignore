@@ -19,3 +19,6 @@ ApolloExplorer-Linux
 ApolloExplorer-Amiga
 ApolloExplorer-macOS.dmg
 .claude
+
+# Test run logs
+tests/results/
