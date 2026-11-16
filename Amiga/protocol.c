@@ -69,13 +69,16 @@ int sendMessage( struct Library *SocketBase, SOCKET clientSocket, ProtocolMessag
 	{
 		bytesToSend = chunkSize < bytesLeftToSend ? chunkSize : bytesLeftToSend;
 		bytesSent = send( clientSocket, sendBufferPosition, bytesToSend, 0 );
-		sendBufferPosition += bytesSent;
-		dbglog( "[sendMessage] Sent %d of %d bytes from address 0x%08x.\r", bytesSent, message->length, (unsigned int)sendBufferPosition );
-		if( bytesSent < 0 )
+		//Check before advancing the pointer.  0 is treated as an error as well: it would
+		//make this loop spin forever.  With SO_SNDTIMEO set, a send to a client that has
+		//stopped reading also ends up here instead of blocking the thread for good.
+		if( bytesSent <= 0 )
 		{
 			dbglog( "[sendMessage] Socket error on socket %d while sending.  Only %d bytes sent.\n", clientSocket, bytesSentSoFar );
 			return SOCKET_ERROR;
 		}
+		sendBufferPosition += bytesSent;
+		dbglog( "[sendMessage] Sent %d of %d bytes from address 0x%08x.\r", bytesSent, message->length, (unsigned int)sendBufferPosition );
 
 		//Book keeping
 		bytesSentSoFar += bytesSent;
@@ -86,47 +89,39 @@ int sendMessage( struct Library *SocketBase, SOCKET clientSocket, ProtocolMessag
 }
 
 
+//Read exactly 'length' bytes from a blocking socket.  Returns 'length', or SOCKET_ERROR
+//when the client closed the connection (recv() == 0), the socket failed, or the
+//socket's receive timeout (SO_RCVTIMEO, set per connection) expired.
+static int receiveAll( struct Library *SocketBase, SOCKET clientSocket, char *buffer, int length )
+{
+	int total = 0;
+	while( total < length )
+	{
+		int received = recv( clientSocket, buffer + total, length - total, 0 );
+		if( received <= 0 )
+		{
+			dbglog( "[receiveAll] recv() returned %d after %d of %d bytes.\n", received, total, length );
+			return SOCKET_ERROR;
+		}
+		total += received;
+	}
+	return total;
+}
+
 int getMessage( struct Library *SocketBase, SOCKET clientSocket, ProtocolMessage_t *message, unsigned int maxMessageLength )
 {
-	int retries = 50;
-	int bytesReceived = 0;
-	int totalBytesReceived = 0;
-
-	//Clear out the message
+	//Clear out the header
 	memset( message, 0, sizeof( ProtocolMessage_t ) );
 
-	//First get the magic token
-	//dbglog( "[getMessage] Waiting on magic token bytes.\n" );
-	LONG bytesAvailable = 0;
-	while( retries > 0 )
+	//Wait for the complete header.  A header can arrive split over several TCP segments;
+	//this used to give up after 50 FIONREAD polls with no wait in between and drop the
+	//connection.  The blocking recv() waits instead, bounded by SO_RCVTIMEO.
+	if( receiveAll( SocketBase, clientSocket, (char*)message, sizeof( ProtocolMessage_t ) ) < 0 )
 	{
-		IoctlSocket( clientSocket,FIONREAD ,&bytesAvailable );
-		if( bytesAvailable < sizeof( ProtocolMessage_t ) )
-		{
-			//Delay( 1 );
-			retries--;
-			continue;
-		}
-
-		dbglog( "[getMessage] Reading next bytes (up to %ld ) from socket.\n", bytesAvailable );
-		bytesReceived = recv( clientSocket, &message->token, sizeof( ProtocolMessage_t ), 0 );
-		if( bytesReceived < sizeof( ProtocolMessage_t ) )
-		{
-			dbglog( "[getMessage] Failed to read all of the message header.\n" );
-			return SOCKET_ERROR;	
-		}else
-		{
-			break;
-		}
+		dbglog( "[getMessage] Failed to read the message header.\n" );
+		return SOCKET_ERROR;
 	}
 	dbglog( "[getMessage] Got message: Token 0x%08x   Type 0x%08x    Length %d.\n", message->token, message->type, message->length );
-
-	//Did we fail to read any bytes?
-	if( bytesReceived < sizeof( ProtocolMessage_t ) )
-	{
-		dbglog( "[getMessage] Failed to read all of the message header.\n" );
-		return SOCKET_ERROR;	
-	}
 
 	//Now check that we got a magic token.
 	if( message->token != MAGIC_TOKEN )
@@ -134,33 +129,23 @@ int getMessage( struct Library *SocketBase, SOCKET clientSocket, ProtocolMessage
 		dbglog( "[getMessage] Didn't get magic token.\n" );
 		return MAGIC_TOKEN_MISSING;
 	}
-	totalBytesReceived = bytesReceived;
 
 	//sanity check
 	if( message->type >= PMT_INVALID )
 		return INVALID_MESSAGE_TYPE;
-	if( message->length > MAX_MESSAGE_LENGTH )
+	if( message->length < sizeof( ProtocolMessage_t ) || message->length > maxMessageLength || message->length > MAX_MESSAGE_LENGTH )
 		return INVALID_MESSAGE_SIZE;
 
-	//Keep pulling bytes until we are done or there is an error
-	int totalBytesLeftToRead = message->length - totalBytesReceived;
-	ULONG bytesToRead = 0;
-	ULONG readChunkSize = 8192;
-	char *receiveBufferPosition = (char*)message + totalBytesReceived;
-	while( totalBytesLeftToRead > 0 )
- 	{
-		bytesToRead = readChunkSize < totalBytesLeftToRead ? readChunkSize : totalBytesLeftToRead;
-		dbglog( "[getMessage] Reading up to %04lu of %04d bytes, %04u bytes remaining (Adr: 0x%08x).\r", bytesToRead, totalBytesLeftToRead, message->length, (unsigned int)receiveBufferPosition );
-		bytesReceived = recv( clientSocket, receiveBufferPosition, bytesToRead, MSG_WAITALL );
-		receiveBufferPosition += bytesReceived;
-		if( bytesReceived == -1 )
-			return SOCKET_ERROR;
-
-		totalBytesReceived += bytesReceived;
-		totalBytesLeftToRead -= bytesReceived;
+	//Now the rest of the message.  recv() == 0 (client gone mid-message) used to spin
+	//this loop forever at task priority 8.
+	int bodyLength = message->length - sizeof( ProtocolMessage_t );
+	if( bodyLength > 0 &&
+		receiveAll( SocketBase, clientSocket, (char*)message + sizeof( ProtocolMessage_t ), bodyLength ) < 0 )
+	{
+		dbglog( "[getMessage] Failed to read the %d byte message body.\n", bodyLength );
+		return SOCKET_ERROR;
 	}
-	dbglog( "[getMessage] %d bytes of %d to read.\n", totalBytesLeftToRead, message->length );
-	return totalBytesReceived;
+	return message->length;
 }
 
 

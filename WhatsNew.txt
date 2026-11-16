@@ -3,6 +3,12 @@ IMPORTANT:Make sure you update the server binary on your Amiga BEFORE you use th
 Updates in Version 1.4.4
 Bug fixes for the Amiga server
  - ash output, downloads and larger directory listings no longer stall on a V4 that cannot send full-size network packets.  The server now keeps its TCP segments at 1400 bytes (was 1460).
+ - A client that disconnects in the middle of a message no longer makes its server thread spin forever at priority 8, which could freeze the network or the whole Amiga.
+ - A message header that arrives in pieces no longer drops the connection.
+ - A client thread ends as soon as its client disconnects, instead of about 60 s later.  Scripts that call acp or ash once per file no longer pile up threads and memory.
+ - A thread whose client stops reading or sending gives up after 10 s (receiving) or 30 s (sending) instead of blocking forever.
+ - ash commands run at priority 0 with a 64 KB stack.  They used to run at priority 8, above the TCP/IP stack, so a busy command stalled every connection.
+ - Ending an ash session after a cd no longer unlocks the same directory lock twice.
 
 Updates in Version 1.4.2
 Bug fixes for the Amiga server
