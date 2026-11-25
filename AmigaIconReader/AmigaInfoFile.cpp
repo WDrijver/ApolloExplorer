@@ -103,38 +103,6 @@ static inline void putByteArrayInBuffer( QByteArray &someBuffer, quint64 &someOf
 }
 
 
-static inline QByteArray BitPlanarToChunky( QByteArray bitPlanarPixels, quint32 width, quint32 height, quint8 bitsPerPixel )
-{
-    //Set aside some memory for our chunky icon
-    char indexedImageData[ width * height ];
-    memset( indexedImageData, 0, width * height );
-
-    //Load in the bitplanar bitmap
-    quint64 pitplaneRowByteLength = ((width+15)/16)*2;
-    quint64 bitplaneSizeInBytes = pitplaneRowByteLength * height;
-
-    //Decode bitplanar into indexed colour mapped pixels
-    for( quint8 bitPlane = 0; bitPlane < bitsPerPixel; bitPlane++ )
-    {
-        for( quint32 y=0; y < height; y++ )
-        {
-            for( quint32 x=0; x < width; x++ )
-            {
-                quint8 bit = 7-x%8;
-                quint8 srcPixelByte = bitPlanarPixels.constData()[ (bitPlane * bitplaneSizeInBytes ) + ( y*pitplaneRowByteLength ) + ( x/8 ) ];
-                srcPixelByte = qFromBigEndian( srcPixelByte );
-                quint8 dstPixelByte = indexedImageData[ x+(y*width) ];
-                quint8 bitComparator = (1<<bit);
-                quint8 resultingPixelByte = (srcPixelByte & bitComparator ? (1<<bitPlane) : 0 ) | dstPixelByte;
-                indexedImageData[ x+(y*width) ] = resultingPixelByte;
-            }
-        }
-    }
-
-    return QByteArray( indexedImageData, width * height );
-}
-
-
 AmigaInfoFile::AmigaInfoFile() :
     m_Icon(),
     m_DrawerData(),
@@ -559,9 +527,8 @@ qint16 AmigaInfoFile::getPriority()
 
 QByteArray AmigaInfoFile::decodeOS2Icon(QByteArray data, quint64 &offset, quint8 depth, quint32 width, quint32 height )
 {
-    //Set aside some memory for our chunky icon
-    char indexedImageData[ width * height ];
-    memset( indexedImageData, 0, width * height );
+    //Set aside some memory for our chunky icon, zero-filled
+    QByteArray indexedImageData( width * height, 0 );
 
     //Load in the bitplanar bitmap
     quint64 pitplaneRowByteLength = ((width+15)/16)*2;
@@ -589,7 +556,7 @@ QByteArray AmigaInfoFile::decodeOS2Icon(QByteArray data, quint64 &offset, quint8
     //Adjust the offset
     offset += bitplaneSizeInBytes * depth;
 
-    return QByteArray( indexedImageData, width * height );
+    return indexedImageData;
 }
 
 
@@ -714,7 +681,6 @@ void AmigaInfoFile::decodeOS35Icon(QByteArray data, quint64 &offset, QByteArray 
 
         //Now do the bitplanar to chunky conversion
         imageData.clear();
-        //imageData.append( BitPlanarToChunky( uncompressedData, width, height, bitsPerPixel ) );
         imageData.append( uncompressedData );
     }
 
