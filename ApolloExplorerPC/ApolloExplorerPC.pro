@@ -18,6 +18,8 @@ macx {
     isEmpty(AE_MAJOR)|isEmpty(AE_MINOR)|isEmpty(AE_REVISION): error("Could not read the version from protocolTypes.h")
     VERSION = $${AE_MAJOR}.$${AE_MINOR}.$${AE_REVISION}
     QMAKE_INFO_PLIST = $$PWD/Info.plist
+    # Copied to Contents/Resources and named in CFBundleIconFile
+    ICON = icons/ApolloExplorer.icns
 }
 
 CONFIG += c++17
