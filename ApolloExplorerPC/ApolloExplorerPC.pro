@@ -6,6 +6,20 @@ TARGET=ApolloExplorer
 
 win32:RC_ICONS += icons/FirebirdHW.ico
 
+# macOS bundle version (CFBundleShortVersionString/CFBundleVersion), taken from
+# VERSION_MAJOR/MINOR/REVISION in protocolTypes.h so it never goes stale here.
+macx {
+    AE_PROTOCOL_LINES = $$cat($$PWD/../protocolTypes.h, lines)
+    for(line, AE_PROTOCOL_LINES) {
+        contains(line, "^$${LITERAL_HASH}define VERSION_MAJOR .*"): AE_MAJOR = $$section(line, " ", 2, 2)
+        contains(line, "^$${LITERAL_HASH}define VERSION_MINOR .*"): AE_MINOR = $$section(line, " ", 2, 2)
+        contains(line, "^$${LITERAL_HASH}define VERSION_REVISION .*"): AE_REVISION = $$section(line, " ", 2, 2)
+    }
+    isEmpty(AE_MAJOR)|isEmpty(AE_MINOR)|isEmpty(AE_REVISION): error("Could not read the version from protocolTypes.h")
+    VERSION = $${AE_MAJOR}.$${AE_MINOR}.$${AE_REVISION}
+    QMAKE_INFO_PLIST = $$PWD/Info.plist
+}
+
 CONFIG += c++17
 QMAKE_CXXFLAGS_DEBUG += -O0
 
