@@ -1,5 +1,9 @@
 IMPORTANT:Make sure you update the server binary on your Amiga BEFORE you use the new client.   All sorts of a interesting things might happen if you don't.
 
+Updates in Version 1.4.5
+Change for the Amiga server
+ - The server no longer limits its TCP segments to 1400 bytes.  That limit was a workaround for the V4 network driver, which could not send full-size network packets.  v4net.device 3.1 fixes this in the driver, so use v4net.device 3.1 or later on a V4.  With an older v4net.device, set MTU=1498 in ENVARC:SANA2/v4net.config (or mtu=1498 in DEVS:NetInterfaces/V4Net on AmigaOS), otherwise ash output and downloads stall again.
+
 Updates in Version 1.4.4
 Bug fixes for the Amiga server
  - ash output, downloads and larger directory listings no longer stall on a V4 that cannot send full-size network packets.  The server now keeps its TCP segments at 1400 bytes (was 1460).
